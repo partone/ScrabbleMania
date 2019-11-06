@@ -9,6 +9,9 @@ Eric Parton
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
 
 using namespace std;
 
@@ -60,8 +63,13 @@ int getWordValue(proposedWord w, char* board);
 
 //Receives a pointer to the board matrix and a number of players
 //Generates the board based on the player number and assigns values to the board variable
-void generateBoard(char * board, int players);
+void generateBoard(char ** board, int players);
 
+//Free board memory
+void freeBoard(char** board, int players);
+
+//Print board
+void printBoard(char** board, int players);
 
 /*
 References

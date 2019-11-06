@@ -131,6 +131,95 @@ int getWordValue(proposedWord w, char* board) {
 
 //TODO: Receives a pointer to the board matrix and a number of players
 //Generates the board based on the player number and assigns values to the board variable
-void generateBoard(char* board, int players) {
+void generateBoard(char** board, int players) {
+	int boardSize = 15;						//Standard board size for 4 players
+	boardSize = boardSize / 4 * players;	//Adjust it for our player number
+	//If the board size comes out even, increase it by one
+	if (boardSize % 2 == 0)
+		boardSize++;
 
+	//Allocate memory to the board
+	board = (char**)malloc(boardSize * sizeof(char*));			//Cast necessary because of the C++ compiler
+	for (int i = 0; i < boardSize; i++) {
+		board[i] = (char*)malloc(boardSize * sizeof(char));
+	}
+
+	//Assign tile roles
+	//0 = Regular tile
+	//1 = Double letter score
+	//2 = Triple letter score
+	//3 = Double word score
+	//4 = Triple word score
+	//Any other char = Placed letter(ex.A, B, C, etc.)
+
+
+	//Set all positions of the board to be regular tiles
+	for (int i = 0; i < boardSize; i++) {
+		for (int j = 0; j < boardSize; j++) {
+			if (i == j) {
+				//Double word
+				board[i][j] = '3';
+			}
+			else {
+				//Regular tile
+				board[i][j] = '0';
+			}
+		}
+
+		//Central multipliers
+		board[boardSize / 2 + 1][boardSize / 2 + 1] = '1';
+		board[boardSize / 2 + 1][boardSize / 2 - 1] = '1';
+		board[boardSize / 2 - 1][boardSize / 2 + 1] = '1';
+		board[boardSize / 2 - 1][boardSize / 2 - 1] = '1';
+
+		board[boardSize / 2 + 2][boardSize / 2 + 2] = '2';
+		board[boardSize / 2 + 2][boardSize / 2 - 2] = '2';
+		board[boardSize / 2 - 2][boardSize / 2 + 2] = '2';
+		board[boardSize / 2 - 2][boardSize / 2 - 2] = '2';
+
+		//Triple word corners
+		board[0][0] = '4';
+		board[0][boardSize - 1] = '4';
+		board[boardSize - 1][0] = '4';
+		board[boardSize - 1][boardSize - 1] = '4';
+
+		//Triple word centres
+		board[0][boardSize / 2] = '4';
+		board[boardSize - 1][boardSize / 2] = '4';
+		board[boardSize / 2][boardSize - 1] = '4';
+		board[boardSize / 2][0] = '4';
+	}
+
+	printBoard(board, players);
+
+}
+
+//Print board
+void printBoard(char** board, int players) {
+	int boardSize = 15;						//Standard board size for 4 players
+	boardSize = boardSize / 4 * players;	//Adjust it for our player number
+	//If the board size comes out even, increase it by one
+	if (boardSize % 2 == 0)
+		boardSize++;
+
+	for (int i = 0; i < boardSize; i++) {
+		for (int j = 0; j < boardSize; j++) {
+			cout << board[i][j] << " ";
+		}
+		cout << endl;
+	}
+}
+
+//Free board memory
+void freeBoard(char** board, int players) {
+	int boardSize = 15;						//Standard board size for 4 players
+	boardSize = boardSize / 4 * players;	//Adjust it for our player number
+	//If the board size comes out even, increase it by one
+	if (boardSize % 2 == 0)
+		boardSize++;
+
+	for (int i = 0; i < boardSize; i++) {
+		free(board[i]);
+	}
+	free(board);
 }
