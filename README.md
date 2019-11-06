@@ -1,0 +1,2 @@
+# ScrabbleMania
+Scrabble but better
