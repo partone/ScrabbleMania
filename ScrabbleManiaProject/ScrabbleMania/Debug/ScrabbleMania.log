@@ -1,0 +1,5 @@
+﻿  Main.cpp
+  Scrabble.cpp
+  Generating Code...
+C:\Users\eric.parton\Documents\GitHub\ScrabbleMania\ScrabbleManiaProject\ScrabbleMania\Scrabble.cpp(10,21): warning C4018:  '<': signed/unsigned mismatch
+  ScrabbleMania.vcxproj -> C:\Users\eric.parton\Documents\GitHub\ScrabbleMania\ScrabbleManiaProject\ScrabbleMania\Debug\ScrabbleMania.exe

@@ -5,6 +5,10 @@ Eric Parton
 
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <ctime>
+#include <cstdlib>
+#include <iostream>
 
 using namespace std;
 
@@ -28,10 +32,19 @@ typedef struct proposedWord {
 	//For the direction, 'u' = up, 'd' = down, 'l' = left, 'r' = right
 	coordinate start;
 	char direction;
-};
+} proposedWord;
 
-//Generates a random letter in accordance with the English Scrabble letter frequency
-char drawLetterChar();
+//Prints a set of scrabble tiles
+void printHand(vector<letterTile> hand);
+
+//Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
+vector<letterTile> generateLetterPool(int numberOfPlayers);
+
+//Draw several letters from the pool and add them to a player's hand
+vector<letterTile> drawLettersAndAddToHand(int numberOfLetters, vector<letterTile>* hand, vector<letterTile>* pool);
+
+//Gets a letter from the pool and removes it from the pool
+letterTile drawLetterChar(vector<letterTile> * pool);
 
 //Checks if a word exists in a given dictionary, returns true if it does.  False otherwise.
 bool isInDictionary(string s, string dictionary);
@@ -40,7 +53,7 @@ bool isInDictionary(string s, string dictionary);
 int getLetterValue(char c);
 
 //Checks if a word can be formed using the existing letters on the board and the player’s tiles
-int canFormWord(proposedWord w, char* board, vector<letterTile> playerHand);
+bool canFormWord(proposedWord w, char* board, vector<letterTile> playerHand);
 
 //Returns the value of placing a word at a certain position on the game board
 int getWordValue(proposedWord w, char* board);
