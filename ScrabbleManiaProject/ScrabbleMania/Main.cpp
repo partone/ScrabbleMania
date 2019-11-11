@@ -9,9 +9,10 @@ Eric Parton
 
 int main() {
 
+	Scrabble scrabble = Scrabble();
 
 	//Generate a pool of letters to draw from
-	int playerNumber = 4;
+	/*int playerNumber = 4;
 	vector<letterTile> letterPool = generateLetterPool(playerNumber);
 
 	//Check pool size
@@ -29,12 +30,14 @@ int main() {
 	cout << "There are now " << letterPool.size() << " letters in the pool" << endl;
 
 	//Generate a board
-	char** board = NULL;
-	generateBoard(board, playerNumber);
+	generateBoard(playerNumber);
 	cout << board[0][0] << endl;
-	//printBoard(board, playerNumber);
+	//printBoard(playerNumber);
 	freeBoard(board, playerNumber);
 
-	cin >> playerNumber;
+	cin >> playerNumber;*/
+
+	scrabble.fillDictionary("dictionaries/english.txt");
+	cout << scrabble.isInDictionary("bee") << endl;
 	return 1;
 }

@@ -9,6 +9,8 @@ Eric Parton
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
+#include <map>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -37,39 +39,53 @@ typedef struct proposedWord {
 	char direction;
 } proposedWord;
 
-//Prints a set of scrabble tiles
-void printHand(vector<letterTile> hand);
+class Scrabble {
+	private:
+		std::map<string, bool> dictionary;
+		char** board;
+	public:
+		// Constructor
+		Scrabble() { board = NULL; };
+		//Prints a set of scrabble tiles
+		void printHand(vector<letterTile> hand);
 
-//Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
-vector<letterTile> generateLetterPool(int numberOfPlayers);
+		// Set settings wanted by user
+		void setSettings();
 
-//Draw several letters from the pool and add them to a player's hand
-vector<letterTile> drawLettersAndAddToHand(int numberOfLetters, vector<letterTile>* hand, vector<letterTile>* pool);
+		// Fill dictionary with the settings from the user
+		void fillDictionary(string dictionaryFileName);
 
-//Gets a letter from the pool and removes it from the pool
-letterTile drawLetterChar(vector<letterTile> * pool);
+		//Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
+		vector<letterTile> generateLetterPool(int numberOfPlayers);
 
-//Checks if a word exists in a given dictionary, returns true if it does.  False otherwise.
-bool isInDictionary(string s, string dictionary);
+		//Draw several letters from the pool and add them to a player's hand
+		vector<letterTile> drawLettersAndAddToHand(int numberOfLetters, vector<letterTile>* hand, vector<letterTile>* pool);
 
-//Returns the point value of a letter in accordance with English Scrabble letter points
-int getLetterValue(char c);
+		//Gets a letter from the pool and removes it from the pool
+		letterTile drawLetterChar(vector<letterTile> * pool);
 
-//Checks if a word can be formed using the existing letters on the board and the player’s tiles
-bool canFormWord(proposedWord w, char* board, vector<letterTile> playerHand);
+		//Checks if a word exists in a given dictionary, returns true if it does.  False otherwise.
+		bool isInDictionary(string s);
 
-//Returns the value of placing a word at a certain position on the game board
-int getWordValue(proposedWord w, char* board);
+		//Returns the point value of a letter in accordance with English Scrabble letter points
+		int getLetterValue(char c);
 
-//Receives a pointer to the board matrix and a number of players
-//Generates the board based on the player number and assigns values to the board variable
-void generateBoard(char ** board, int players);
+		//Checks if a word can be formed using the existing letters on the board and the playerï¿½s tiles
+		bool canFormWord(proposedWord w, vector<letterTile> playerHand);
 
-//Free board memory
-void freeBoard(char** board, int players);
+		//Returns the value of placing a word at a certain position on the game board
+		int getWordValue(proposedWord w);
 
-//Print board
-void printBoard(char** board, int players);
+		//Receives a pointer to the board matrix and a number of players
+		//Generates the board based on the player number and assigns values to the board variable
+		void generateBoard(int players);
+
+		//Free board memory
+		void freeBoard(int players);
+
+		//Print board
+		void printBoard(int players);
+};
 
 /*
 References
