@@ -5,26 +5,71 @@ Eric Parton
 
 #include "Scrabble.h"
 
+// Constructor
+Scrabble::Scrabble(){
+	hasGameStarted = false;
+	board = NULL;
+}
+
+// New player wants to connect to game
+void Scrabble::addPlayerToGame(string name){
+	if (!hasGameStarted){
+		// The id will be its index at players' vector
+		Player newPlayer = Player(players.size(), name);
+		players.push_back(newPlayer);
+	}else{
+		// Do not add it but let it expectate
+	}
+}
+
+// Set settings wanted by user
+void Scrabble::setSettings(string dictionaryFileName){
+	gameSettings.dictionaryFileName = dictionaryFileName;
+}
+
+// Start the game
+void Scrabble::startGame(){
+	if(!hasGameStarted) {
+		hasGameStarted = true;
+		fillDictionary();
+		// generateBoard();
+		// printBoard();
+	}
+}
+
+// End the game
+void Scrabble::endGame(){
+	if(hasGameStarted) {
+		hasGameStarted = false;
+
+		freeBoard();
+
+		// TODO: calculate winner, etc...
+
+	}
+}
+
 //Prints a set of scrabble tiles
-void Scrabble::printHand(vector<letterTile> hand) {
-	 for (int i = 0; i < hand.size(); i++) {
-		 cout << hand[i].letter << " " << hand[i].value;
-		 if (i != hand.size() - 1) {
-			 cout << " // ";
-		 }
-	 }
-	 cout << endl;
+void Scrabble::printHand(int playerId) {
+	vector<letterTile_t> *hand = players[playerId].getHand();
+	for (int i = 0; i < hand->size(); i++) {
+		cout << hand->at(i).letter << " " << hand->at(i).value;
+		if (i != hand->size() - 1) {
+			cout << " // ";
+		}
+	}
+	cout << endl;
 }
 
 // Fill dictionary with the settings from the user
-void Scrabble::fillDictionary(string dictionaryFileName){
+void Scrabble::fillDictionary(){
 	string line;
-  ifstream file (dictionaryFileName);
+  ifstream file (gameSettings.dictionaryFileName);
 
   if (file.is_open()) {
     while ( getline (file,line) ) {
       // Save it in a the dictionary data structure
-			dictionary[line] = true;
+			dictionary.insert(line);
     }
     file.close();
   }
@@ -33,7 +78,7 @@ void Scrabble::fillDictionary(string dictionaryFileName){
 }
 
 //Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
-vector<letterTile> Scrabble::generateLetterPool(int numberOfPlayers) {
+void Scrabble::generateLetterPool() {
 	char letterList[] = { ' ', ' ',
 						'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E',
 						'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
@@ -57,17 +102,16 @@ vector<letterTile> Scrabble::generateLetterPool(int numberOfPlayers) {
 						'W', 'W',
 						'Y', 'Y',
 						'K', 'J', 'X', 'Q', 'Z'};
-	vector<letterTile> letterPool;
 	int cycler = 0;
-	int numberOfTiles = numberOfPlayers * 25;
+	int numberOfTiles = players.size() * 25;
 	//Calculate a full set of letters for each player, then shuffle, then prune 3/4 of them
 	//That way the letters are evenly distributed
-	int numberOfCycles = numberOfPlayers * 100;
+	int numberOfCycles = players.size() * 100;
 
 
 	//Go around the letter list adding letters until enough tiles have been pushed
 	for (int i = 0; i < numberOfCycles; i++) {
-		letterTile tmp;								//Create a generic letter tile 
+		letterTile_t tmp;								//Create a generic letter tile 
 		tmp.letter = letterList[cycler];			//Assign it a letter
 		tmp.value = getLetterValue(tmp.letter);		//Get the letter's value
 		letterPool.push_back(tmp);					//Push the new letter in
@@ -83,25 +127,20 @@ vector<letterTile> Scrabble::generateLetterPool(int numberOfPlayers) {
 
 	//Prune the extra tiles
 	letterPool.resize(numberOfTiles);
-
-	return letterPool;
 }
 
 //Draw several letters from the pool and add them to a player's hand
-vector<letterTile> Scrabble::drawLettersAndAddToHand(int numberOfLetters, vector<letterTile>* hand, vector<letterTile>* pool) {
-	vector<letterTile> newHand = *hand;
+void Scrabble::drawLettersAndAddToHand(int numberOfLetters, int playerId) {
 	//Push fresh pool values in to the hand
 	for (int i = 0; i < numberOfLetters; i++) {
-		newHand.push_back(drawLetterChar(pool));
+		players[playerId].addTileToHand(drawLetterChar());
 	}
-	//Return the player's new hand
-	return newHand;
 }
 
 //Gets a letter from the pool and removes it from the pool 
-letterTile Scrabble::drawLetterChar(vector<letterTile> * pool) {
-	letterTile returnVal = pool->back();		//Get the last element
-	pool->pop_back();					//Pop the last element
+letterTile_t Scrabble::drawLetterChar() {
+	letterTile_t returnVal = letterPool.back();		//Get the last element
+	letterPool.pop_back();					//Pop the last element
 	return returnVal;					//Return the letter
 }
 
@@ -130,26 +169,36 @@ int Scrabble::getLetterValue(char c) {
 	case ' ':
 		return 0;
 	default:
-		"Error, invalid character";
+		cout  << "Error, invalid character" << endl;
 		return -1;
 	}
 }
 
-//TODO: Checks if a word can be formed using the existing letters on the board and the player�s tiles
-bool Scrabble::canFormWord(proposedWord w, vector<letterTile> playerHand) {
+/* 
+ * Checks if a word can be formed:
+ * 1. Exists in the dictionary (isInDictionary function)
+ * 2. TODO: Fits in the board considering the existing letters on it (canFormWord function)
+ * 3. TODO: The player's tiles (canFormWord function)
+ * 
+ */ 
+bool Scrabble::isValidWord(proposedWord_t proposedWord, int playerId) {
+	return isInDictionary(proposedWord.word) && canFormWord(proposedWord, playerId);
+}
+
+// TODO: Checks if a word can be formed using the existing letters on the board and the player's tiles
+bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 	return true;
 }
 
 //TODO: Returns the value of placing a word at a certain position on the game board
-int Scrabble::getWordValue(proposedWord w) {
+int Scrabble::getWordValue(proposedWord_t proposedWord) {
 	return 1;
 }
 
-//TODO: Receives a pointer to the board matrix and a number of players
 //Generates the board based on the player number and assigns values to the board variable
-void Scrabble::generateBoard(int players) {
+void Scrabble::generateBoard() {
 	int boardSize = 15;						//Standard board size for 4 players
-	boardSize = boardSize / 4 * players;	//Adjust it for our player number
+	boardSize = boardSize / 4 * players.size();	//Adjust it for our player number
 	//If the board size comes out even, increase it by one
 	if (boardSize % 2 == 0)
 		boardSize++;
@@ -206,14 +255,12 @@ void Scrabble::generateBoard(int players) {
 		board[boardSize / 2][0] = '4';
 	}
 
-	printBoard(players);
-
 }
 
 //Print board
-void Scrabble::printBoard(int players) {
+void Scrabble::printBoard() {
 	int boardSize = 15;						//Standard board size for 4 players
-	boardSize = boardSize / 4 * players;	//Adjust it for our player number
+	boardSize = boardSize / 4 * players.size();	//Adjust it for our player number
 	//If the board size comes out even, increase it by one
 	if (boardSize % 2 == 0)
 		boardSize++;
@@ -227,9 +274,9 @@ void Scrabble::printBoard(int players) {
 }
 
 //Free board memory
-void Scrabble::freeBoard(int players) {
+void Scrabble::freeBoard() {
 	int boardSize = 15;						//Standard board size for 4 players
-	boardSize = boardSize / 4 * players;	//Adjust it for our player number
+	boardSize = boardSize / 4 * players.size();	//Adjust it for our player number
 	//If the board size comes out even, increase it by one
 	if (boardSize % 2 == 0)
 		boardSize++;

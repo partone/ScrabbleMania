@@ -35790,8 +35790,8 @@ coopering
 coopers
 cooping
 coops
-coordinate
-coordinate's
+coordinate_t
+coordinate_t's
 coordinated
 coordinates
 coordinating

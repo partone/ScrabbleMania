@@ -1,6 +1,11 @@
 # ScrabbleMania
 Scrabble but better
 
+## Techinal
+
+- Client will have one object of type Player
+- Server will have one object of type Scrabble
+
 ## References
 - ### Dictionary 
   Custom wordlist generated from http://app.aspell.net/create using SCOWL

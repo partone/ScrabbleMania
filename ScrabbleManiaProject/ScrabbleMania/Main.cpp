@@ -4,6 +4,7 @@ Eric Parton
 */
 
 #include "Scrabble.h"
+#include "Player.h"
 
 #define HAND_SIZE 7
 
@@ -13,13 +14,13 @@ int main() {
 
 	//Generate a pool of letters to draw from
 	/*int playerNumber = 4;
-	vector<letterTile> letterPool = generateLetterPool(playerNumber);
+	vector<letterTile_t> letterPool = generateLetterPool(playerNumber);
 
 	//Check pool size
 	cout << "There are " << letterPool.size() << " letters in the letter pool" << endl;
 
 	//Fill a player's hand
-	vector<letterTile> playerHand1;
+	vector<letterTile_t> playerHand1;
 	playerHand1 = drawLettersAndAddToHand(HAND_SIZE, &playerHand1, &letterPool);
 	cout << "Requesting 7 new tiles for the player" << endl;
 	
@@ -37,7 +38,17 @@ int main() {
 
 	cin >> playerNumber;*/
 
-	scrabble.fillDictionary("dictionaries/english.txt");
-	cout << scrabble.isInDictionary("bee") << endl;
+	scrabble.addPlayerToGame("Luis");
+
+	scrabble.setSettings("dictionaries/english.txt");
+
+	scrabble.startGame();
+	
+	proposedWord_t proposedWord = proposedWord_t("bee", 0, 0, 'u');
+
+	cout << scrabble.isValidWord(proposedWord, 0) << endl;
+
+	scrabble.endGame();
+	
 	return 1;
 }

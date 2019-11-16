@@ -10,81 +10,82 @@ Eric Parton
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <map>
+#include <set>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "scrabble_structs.h"
+#include "Player.h"
 
 using namespace std;
 
-//Useful structures
-
-//The equivalent of real-world Scrabble letter tile pieces
-typedef struct letterTile {
-	char letter;
-	int value;
-} letterTile;
-
-//For positioning tiles on the board
-typedef struct coordinate {
-	int x;
-	int y;
-} coordinate;
-
-typedef struct proposedWord {
-	string word;
-	//To know where a word is to be placed, the only info needed is the starting coordinate and the direction
-	//For the direction, 'u' = up, 'd' = down, 'l' = left, 'r' = right
-	coordinate start;
-	char direction;
-} proposedWord;
-
 class Scrabble {
 	private:
-		std::map<string, bool> dictionary;
+		bool hasGameStarted;
+		std::set<string> dictionary;
 		char** board;
-	public:
-		// Constructor
-		Scrabble() { board = NULL; };
-		//Prints a set of scrabble tiles
-		void printHand(vector<letterTile> hand);
+		vector<letterTile_t> letterPool;
+		vector<Player> players;
+		gameSettings_t gameSettings;
 
-		// Set settings wanted by user
-		void setSettings();
-
+		//Generates the board based on the player number and assigns values to the board variable
+		void generateBoard();
 		// Fill dictionary with the settings from the user
-		void fillDictionary(string dictionaryFileName);
-
-		//Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
-		vector<letterTile> generateLetterPool(int numberOfPlayers);
-
-		//Draw several letters from the pool and add them to a player's hand
-		vector<letterTile> drawLettersAndAddToHand(int numberOfLetters, vector<letterTile>* hand, vector<letterTile>* pool);
-
-		//Gets a letter from the pool and removes it from the pool
-		letterTile drawLetterChar(vector<letterTile> * pool);
+		void fillDictionary();
 
 		//Checks if a word exists in a given dictionary, returns true if it does.  False otherwise.
 		bool isInDictionary(string s);
+		//Checks if a word can be formed using the existing letters on the board and the player�s tiles
+		bool canFormWord(proposedWord_t proposedWord, int playerId);
+
+		//Free board memory
+		void freeBoard();
+	public:
+		// Constructor
+		Scrabble();
+
+		// New player wants to connect to game
+		void addPlayerToGame(string name);
+
+		// Set settings wanted by user
+		void setSettings(string dictionaryFileName);
+
+		// Start the game
+		void startGame();
+
+		// End the game
+		void endGame();
+
+		/*** Actions in Game ***/
+
+		//Prints a set of scrabble tiles
+		void printHand(int playerId);
+
+		//Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
+		void generateLetterPool();
+
+		//Draw several letters from the pool and add them to a player's hand
+		void drawLettersAndAddToHand(int numberOfLetters, int playerId);
+
+		//Gets a letter from the pool and removes it from the pool
+		letterTile_t drawLetterChar();
 
 		//Returns the point value of a letter in accordance with English Scrabble letter points
 		int getLetterValue(char c);
 
-		//Checks if a word can be formed using the existing letters on the board and the player�s tiles
-		bool canFormWord(proposedWord w, vector<letterTile> playerHand);
+		/* 
+		* Checks if a word can be formed:
+		* 1. Exists in the dictionary (isInDictionary function)
+		* 2. Fits in the board considering the existing letters on it (canFormWord function)
+		* 3. The player's tiles (canFormWord function)
+		* 
+		*/ 
+		bool isValidWord(proposedWord_t proposedWord, int playerId);
 
 		//Returns the value of placing a word at a certain position on the game board
-		int getWordValue(proposedWord w);
-
-		//Receives a pointer to the board matrix and a number of players
-		//Generates the board based on the player number and assigns values to the board variable
-		void generateBoard(int players);
-
-		//Free board memory
-		void freeBoard(int players);
+		int getWordValue(proposedWord_t proposedWord);
 
 		//Print board
-		void printBoard(int players);
+		void printBoard();
 };
 
 /*
