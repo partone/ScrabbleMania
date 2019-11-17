@@ -13,6 +13,13 @@ using namespace std;
 
 //Useful structures
 
+// Board struct
+typedef struct boardStruct {
+  char **data;
+  // save size of matrix: 0 index is rows, 1 index is columns
+  int size;
+} board_t;
+
 //The equivalent of real-world Scrabble letter tile pieces
 typedef struct letterTileStruct {
 	char letter;

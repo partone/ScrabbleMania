@@ -39,6 +39,7 @@ int main() {
 	cin >> playerNumber;*/
 
 	scrabble.addPlayerToGame("Luis");
+	scrabble.addPlayerToGame("Eric");
 
 	scrabble.setSettings("dictionaries/english.txt");
 

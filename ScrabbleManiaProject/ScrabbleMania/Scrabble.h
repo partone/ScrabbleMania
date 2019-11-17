@@ -22,7 +22,7 @@ class Scrabble {
 	private:
 		bool hasGameStarted;
 		std::set<string> dictionary;
-		char** board;
+		board_t *board;
 		vector<letterTile_t> letterPool;
 		vector<Player> players;
 		gameSettings_t gameSettings;
