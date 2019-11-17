@@ -13,7 +13,7 @@ Eric Parton
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <map>
+#include <set>
 #include <stdio.h>
 #include <stdlib.h>
 #include "scrabble_structs.h"
@@ -25,6 +25,7 @@ private:
   int id;
   string name;
   vector<letterTile_t> hand;
+  int score;
 public:
   Player(int _id);
   Player(int _id, string _name = "");
@@ -36,6 +37,8 @@ public:
 
   void addTileToHand(letterTile_t tile);
   vector<letterTile_t> * getHand();
+
+  bool hasNeededLetters(vector<char> neededLetters);
 };
 
 #endif  /* NOT PLAYER_H */

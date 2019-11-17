@@ -38,16 +38,26 @@ int main() {
 
 	cin >> playerNumber;*/
 
-	scrabble.addPlayerToGame("Luis");
-	scrabble.addPlayerToGame("Eric");
+	int idLuis = scrabble.addPlayerToGame("Luis");
+	int idEric = scrabble.addPlayerToGame("Eric");
 
 	scrabble.setSettings("dictionaries/english.txt");
 
 	scrabble.startGame();
-	
-	proposedWord_t proposedWord = proposedWord_t("bee", 0, 0, 'u');
 
-	cout << scrabble.isValidWord(proposedWord, 0) << endl;
+	/*scrabble.printHand(idLuis);
+
+	int indexes[] = {4};
+
+	scrabble.exchangeLetters(idLuis, indexes, 1);
+
+	cout << "After exchange letters 5: " << endl;*/
+
+	scrabble.printHand(idLuis);
+	
+	proposedWord_t proposedWord = proposedWord_t("A", 0, 0, 'd');
+
+	cout << scrabble.addWordToGame(proposedWord, idLuis) << endl;
 
 	scrabble.endGame();
 	

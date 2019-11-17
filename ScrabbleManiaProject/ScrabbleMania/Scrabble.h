@@ -32,10 +32,22 @@ class Scrabble {
 		// Fill dictionary with the settings from the user
 		void fillDictionary();
 
+		/* 
+		* Checks if a word can be formed:
+		* 1. Exists in the dictionary (isInDictionary function)
+		* 2. Fits in the board considering the existing letters on it (canFormWord function)
+		* 3. The player's tiles (canFormWord function)
+		* 
+		*/ 
+		bool isValidWord(proposedWord_t proposedWord, int playerId);
 		//Checks if a word exists in a given dictionary, returns true if it does.  False otherwise.
 		bool isInDictionary(string s);
 		//Checks if a word can be formed using the existing letters on the board and the player�s tiles
 		bool canFormWord(proposedWord_t proposedWord, int playerId);
+		// Check if words fits in board
+		// Check if there are letters already in position, that they are equal to the index in word
+		bool wordFitsInBoard(proposedWord_t proposedWord, vector<char> *neededLetters);
+
 
 		//Free board memory
 		void freeBoard();
@@ -44,7 +56,7 @@ class Scrabble {
 		Scrabble();
 
 		// New player wants to connect to game
-		void addPlayerToGame(string name);
+		int addPlayerToGame(string name);
 
 		// Set settings wanted by user
 		void setSettings(string dictionaryFileName);
@@ -63,6 +75,9 @@ class Scrabble {
 		//Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
 		void generateLetterPool();
 
+		// Exchange specific letters from hand for random letters of letter pool
+		void exchangeLetters(int playerId, int indexes[], size_t numberOfIndexes);
+
 		//Draw several letters from the pool and add them to a player's hand
 		void drawLettersAndAddToHand(int numberOfLetters, int playerId);
 
@@ -72,14 +87,8 @@ class Scrabble {
 		//Returns the point value of a letter in accordance with English Scrabble letter points
 		int getLetterValue(char c);
 
-		/* 
-		* Checks if a word can be formed:
-		* 1. Exists in the dictionary (isInDictionary function)
-		* 2. Fits in the board considering the existing letters on it (canFormWord function)
-		* 3. The player's tiles (canFormWord function)
-		* 
-		*/ 
-		bool isValidWord(proposedWord_t proposedWord, int playerId);
+		// Adds word to board if it's a valid one
+		bool addWordToGame(proposedWord_t proposedWord, int playerId);
 
 		//Returns the value of placing a word at a certain position on the game board
 		int getWordValue(proposedWord_t proposedWord);

@@ -5,6 +5,8 @@ Eric Parton
 
 #include "Scrabble.h"
 
+#define HAND_SIZE 7
+
 // Constructor
 Scrabble::Scrabble(){
 	hasGameStarted = false;
@@ -12,14 +14,17 @@ Scrabble::Scrabble(){
 }
 
 // New player wants to connect to game
-void Scrabble::addPlayerToGame(string name){
+int Scrabble::addPlayerToGame(string name){
+	int id = -1;
 	if (!hasGameStarted){
 		// The id will be its index at players' vector
-		Player newPlayer = Player(players.size(), name);
+		id = players.size();
+		Player newPlayer = Player(id, name);
 		players.push_back(newPlayer);
 	}else{
 		// Do not add it but let it expectate
 	}
+	return id;
 }
 
 // Set settings wanted by user
@@ -33,7 +38,14 @@ void Scrabble::startGame(){
 		hasGameStarted = true;
 		fillDictionary();
 		generateBoard();
+		generateLetterPool();
 		printBoard();
+
+		// Give 7 letters to each player
+		for(int i = 0; i < players.size(); i++){
+			drawLettersAndAddToHand(HAND_SIZE, i);
+		}
+
 	}
 }
 
@@ -103,7 +115,7 @@ void Scrabble::generateLetterPool() {
 						'Y', 'Y',
 						'K', 'J', 'X', 'Q', 'Z'};
 	int cycler = 0;
-	int numberOfTiles = players.size() * 25;
+	int numberOfTiles = players.size() > 4 ? players.size() * 25 : 100; // Minimum 100 tiles
 	//Calculate a full set of letters for each player, then shuffle, then prune 3/4 of them
 	//That way the letters are evenly distributed
 	int numberOfCycles = players.size() * 100;
@@ -127,6 +139,30 @@ void Scrabble::generateLetterPool() {
 
 	//Prune the extra tiles
 	letterPool.resize(numberOfTiles);
+}
+
+// Exchange specific letters from hand for random letters of letter pool
+void Scrabble::exchangeLetters(int playerId, int indexes[], size_t numberOfIndexes){
+	// Get the hand from playerId
+	vector<letterTile_t> *hand = players[playerId].getHand();
+	int index = 0;
+	letterTile_t letterTile;
+
+	// Loop through the received indexes of tiles
+	for(int i = 0; i < numberOfIndexes; i++) {
+		index = indexes[i];
+		// Get the tile
+		letterTile = hand->at(index);
+		// Return the tile to the letterPool
+		letterPool.insert(letterPool.begin(), letterTile); 
+		// Remove it from the hand
+		hand->erase(hand->begin() + index);
+		// Draw a new letter to the hand at the same position
+		hand->insert(hand->begin() +  index, drawLetterChar());
+	}
+
+	//Shuffle the pool
+	random_shuffle(letterPool.begin(), letterPool.end());
 }
 
 //Draw several letters from the pool and add them to a player's hand
@@ -174,19 +210,128 @@ int Scrabble::getLetterValue(char c) {
 	}
 }
 
+// Adds word to board if it's a valid one
+bool Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
+	if(!isValidWord(proposedWord, playerId)){
+		return false;
+	}
+
+	// TODO: write word in board
+
+	// TODO: add points from formed word to player
+	return true;
+}
+
 /* 
  * Checks if a word can be formed:
  * 1. Exists in the dictionary (isInDictionary function)
- * 2. TODO: Fits in the board considering the existing letters on it (canFormWord function)
- * 3. TODO: The player's tiles (canFormWord function)
+ * 2. Fits in the board considering the existing letters on it (canFormWord function)
+ * 3. The player's tiles (canFormWord function)
  * 
  */ 
 bool Scrabble::isValidWord(proposedWord_t proposedWord, int playerId) {
 	return isInDictionary(proposedWord.word) && canFormWord(proposedWord, playerId);
 }
 
-// TODO: Checks if a word can be formed using the existing letters on the board and the player's tiles
+// Checks if a word can be formed using the existing letters on the board and the player's tiles
 bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
+	vector<char> neededLetters;
+	// Check if words fits in board and if there are letters already in position, that they are equal to the index in word
+	// Check if player has the missing letters
+	return wordFitsInBoard(proposedWord, &neededLetters) && players[playerId].hasNeededLetters(neededLetters);
+}
+
+// Check if words fits in board
+// Check if there are letters already in position, that they are equal to the index in word
+// Fill the vector of neededLetters
+bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *neededLetters){
+	// Check if words fits in board
+	if(proposedWord.start.x >= board->size || proposedWord.start.y >= board->size){
+		printf("Error: start coordinate of proposed word must be within the board limits\n");
+		return false;
+	}
+
+	// Check if there are letters already in position, that they are equal to the index in word
+	int coordinateLastLetter = 0;
+	int i = 0;
+	switch (proposedWord.direction){
+		case 'u':
+			// if up, last letter coordinate will be in coordinate y
+			coordinateLastLetter = proposedWord.start.y;
+			while(coordinateLastLetter > -1 && i < proposedWord.word.size()){
+				if(board->data[proposedWord.start.x][coordinateLastLetter] < '5'){
+					// It means it is empty with value of 0,1,2,3,4
+					// Add letter to neededLetters vector
+					neededLetters->push_back(proposedWord.word[i]);
+				// Check that the letter that is in tile is the same of word index
+				}else if(board->data[proposedWord.start.x][coordinateLastLetter] != proposedWord.word[i]){
+					return false;
+				}
+
+				coordinateLastLetter--;
+				i++;
+			}
+		break;
+		case 'd':
+			// if down, last letter coordinate will be in coordinate y
+			coordinateLastLetter = proposedWord.start.y;
+			while(coordinateLastLetter < board->size && i < proposedWord.word.size()){
+				if(board->data[proposedWord.start.x][coordinateLastLetter] < '5'){
+					// It means it is empty with value of 0,1,2,3,4
+					// Add letter to neededLetters vector
+					neededLetters->push_back(proposedWord.word[i]);
+				// Check that the letter that is in tile is the same of word index
+				}else if(board->data[proposedWord.start.x][coordinateLastLetter] != proposedWord.word[i]){
+					return false;
+				}
+
+				coordinateLastLetter++;
+				i++;
+			}
+		break;
+		case 'l':
+			// if left, last letter coordinate will be in coordinate x
+			coordinateLastLetter = proposedWord.start.x;
+			while(coordinateLastLetter > -1 && i < proposedWord.word.size()){
+				if(board->data[coordinateLastLetter][proposedWord.start.y] < '5'){
+					// It means it is empty with value of 0,1,2,3,4
+					// Add letter to neededLetters vector
+					neededLetters->push_back(proposedWord.word[i]);
+				// Check that the letter that is in tile is the same of word index
+				}else if(board->data[coordinateLastLetter][proposedWord.start.y] != proposedWord.word[i]){
+					return false;
+				}
+
+				coordinateLastLetter--;
+				i++;
+			}
+		break;
+		case 'r':
+			// if right, last letter coordinate will be in coordinate x
+			coordinateLastLetter = proposedWord.start.x;
+			while(coordinateLastLetter < board->size && i < proposedWord.word.size()){
+				if(board->data[coordinateLastLetter][proposedWord.start.y] < '5'){
+					// It means it is empty with value of 0,1,2,3,4
+					// Add letter to neededLetters vector
+					neededLetters->push_back(proposedWord.word[i]);
+				// Check that the letter that is in tile is the same of word index
+				}else if(board->data[coordinateLastLetter][proposedWord.start.y] != proposedWord.word[i]){
+					return false;
+				}
+
+				coordinateLastLetter++;
+				i++;
+			}
+		break;
+		default:
+		break;
+	}
+
+	// It means the word does not fit in the board's bounds
+	if(i < proposedWord.word.size()){
+		printf("Error: proposed word must be within the board limits\n");
+		return false;
+	}
 	return true;
 }
 
@@ -200,7 +345,7 @@ void Scrabble::generateBoard() {
 	int boardSize = 15;						//Standard board size for 4 players
 
 	board = (board_t *)malloc(sizeof(board_t));
-  board->data = NULL;
+	board->data = NULL;
 	board->size = players.size() > 4 ? boardSize / 4 * players.size() : boardSize;	//Adjust it for our player number if it is greater than 4
 	//If the board size comes out even, increase it by one
 
@@ -263,12 +408,19 @@ void Scrabble::generateBoard() {
 
 //Print board
 void Scrabble::printBoard() {
-  for(int i = 0; i < board->size; i++){
-    for(int j = 0; j < board->size; j++){
-      printf("%c ", board->data[i][j]);
-    }
-    printf("\n");
-  }
+	// print headings
+	printf("  ");
+	for(int i = 0; i < board->size; i++){
+		printf("%2d ", i+1);
+	}
+	printf("\n");
+	for(int i = 0; i < board->size; i++){
+		printf("%2d ", i+1);
+		for(int j = 0; j < board->size; j++){
+			printf("%c  ", board->data[i][j]);
+		}
+		printf("\n");
+	}
 }
 
 //Free board memory
