@@ -76,17 +76,17 @@ void Scrabble::printHand(int playerId) {
 // Fill dictionary with the settings from the user
 void Scrabble::fillDictionary(){
 	string line;
-  ifstream file (gameSettings.dictionaryFileName);
+	ifstream file (gameSettings.dictionaryFileName);
 
-  if (file.is_open()) {
-    while ( getline (file,line) ) {
-      // Save it in a the dictionary data structure
+	if (file.is_open()) {
+	while ( getline (file,line) ) {
+		// Save it in a the dictionary data structure
 			dictionary.insert(line);
-    }
-    file.close();
-  }
+	}
+	file.close();
+	}
 
-  else cout << "Unable to open file"; 
+	else cout << "Unable to open file"; 
 }
 
 //Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
@@ -216,10 +216,48 @@ bool Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 		return false;
 	}
 
-	// TODO: write word in board
+	//Write word onto board
+	placeLettersOnBoard(proposedWord);
 
-	// TODO: add points from formed word to player
+	//Add points from formed word to player
+	int wordValue = getWordValue(proposedWord);
+	cout << proposedWord.word << " scores " << wordValue << endl;
+	players[playerId].setScore(players[playerId].getScore() + wordValue);
 	return true;
+}
+
+//Write word onto board
+void Scrabble::placeLettersOnBoard(proposedWord_t proposedWord) {
+	//Simplify variable names
+	int x = proposedWord.start.x;
+	int y = proposedWord.start.y;
+	string word = proposedWord.word;
+	char direction = proposedWord.direction;
+
+	vector<char> boardWordPath;
+	for (int i = 0; i < word.length(); i++) {
+		//Place the letter at the board position
+		setBoardPosValue(x, y, word[i]);
+		//Move to the next index
+		switch (direction) {
+		case 'u':
+			y--;
+			break;
+		case 'd':
+			y++;
+			break;
+		case 'l':
+			x--;
+			break;
+		case 'r':
+			x++;
+			break;
+		default:
+			cout << "Error: invalid direction\n";
+			break;
+		}
+	}
+	return;
 }
 
 /* 
@@ -335,9 +373,12 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 	return true;
 }
 
-//TODO: Returns the value of placing a word at a certain position on the game board
+//Returns the value of placing a word at a certain position on the game board
 int Scrabble::getWordValue(proposedWord_t proposedWord) {
-	return 1;
+	//Get the vector of values on the existing board where the word will be placed
+	vector<char> boardWordPath = getBoardWordPath(proposedWord);
+	//Calculate the value of the word base on where it's being placed
+	return getWordValueWithBonuses(proposedWord.word, boardWordPath);
 }
 
 //Generates the board based on the player number and assigns values to the board variable
@@ -404,6 +445,8 @@ void Scrabble::generateBoard() {
 	board->data[board->size / 2][board->size - 1] = '4';
 	board->data[board->size / 2][0] = '4';
 
+	//Centre of the board is neutral
+	board->data[board->size / 2][board->size / 2] = '0';
 }
 
 //Print board
@@ -417,10 +460,21 @@ void Scrabble::printBoard() {
 	for(int i = 0; i < board->size; i++){
 		printf("%2d ", i+1);
 		for(int j = 0; j < board->size; j++){
-			printf("%c  ", board->data[i][j]);
+			printf("%c  ", board->data[j][i]);
 		}
 		printf("\n");
 	}
+}
+
+//Get the char value from the board at a certain position
+char Scrabble::getBoardPosValue(int x, int y) {
+	return board->data[x][y];
+}
+
+//Set the board value at a position
+void Scrabble::setBoardPosValue(int x, int y, char value) {
+	board->data[x][y] = value;
+	return;
 }
 
 //Free board memory
@@ -430,4 +484,75 @@ void Scrabble::freeBoard() {
   }
   free(board->data);
   free(board);
+}
+
+//Get the vector of values on the existing board where the word will be placed
+vector<char> Scrabble::getBoardWordPath(proposedWord_t proposedWord) {
+	//Simplify variable names
+	int x = proposedWord.start.x;
+	int y = proposedWord.start.y;
+	string word = proposedWord.word;
+	char direction = proposedWord.direction;
+
+	vector<char> boardWordPath;
+	for (int i = 0; i < word.length(); i++) {
+		//Push the value and move to the next board position
+		boardWordPath.push_back(getBoardPosValue(x, y));
+		switch (direction) {
+		case 'u':
+			y--;
+			break;
+		case 'd':
+			y++;
+			break;
+		case 'l':
+			x--;
+			break;
+		case 'r':
+			x++;
+			break;
+		default:
+			cout << "Error: invalid direction\n";
+			break;
+		}
+	}
+	return boardWordPath;
+}
+
+//Returns the value of a word, taking in to account bonuses
+int Scrabble::getWordValueWithBonuses(string word, vector<char> boardWordPath) {
+	int value = 0;
+	int letterValue = 0;
+	int wordMultiplier = 1;
+	for (int i = 0; i < word.length(); i++) {
+		//Get the value of the letter
+		letterValue = getLetterValue(word[i]);
+		//Check if it can be multiplied by anything
+		switch (boardWordPath[i]) {
+		case '1':
+			//Double letter score
+			letterValue *= 2;
+			break;
+		case '2':
+			//Triple letter score
+			letterValue *= 3;
+			break;
+		case '3':
+			//Double word score
+			wordMultiplier *= 2;
+			break;
+		case '4':
+			//Triple word score
+			wordMultiplier *= 3;
+			break;
+		default:
+			//Nothing interesting (0 tile or already placed letter)
+			break;
+		}
+		//Add the letter value after each iteration
+		value += letterValue;
+	}
+	//Multiply by any word multipliers at the end
+	value *= wordMultiplier;
+	return value;
 }

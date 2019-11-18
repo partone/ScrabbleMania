@@ -12,32 +12,6 @@ int main() {
 
 	Scrabble scrabble = Scrabble();
 
-	//Generate a pool of letters to draw from
-	/*int playerNumber = 4;
-	vector<letterTile_t> letterPool = generateLetterPool(playerNumber);
-
-	//Check pool size
-	cout << "There are " << letterPool.size() << " letters in the letter pool" << endl;
-
-	//Fill a player's hand
-	vector<letterTile_t> playerHand1;
-	playerHand1 = drawLettersAndAddToHand(HAND_SIZE, &playerHand1, &letterPool);
-	cout << "Requesting 7 new tiles for the player" << endl;
-	
-	//Print the hand
-	printHand(playerHand1);
-
-	//Check pool size
-	cout << "There are now " << letterPool.size() << " letters in the pool" << endl;
-
-	//Generate a board
-	generateBoard(playerNumber);
-	cout << board[0][0] << endl;
-	//printBoard(playerNumber);
-	freeBoard(board, playerNumber);
-
-	cin >> playerNumber;*/
-
 	int idLuis = scrabble.addPlayerToGame("Luis");
 	int idEric = scrabble.addPlayerToGame("Eric");
 
@@ -45,21 +19,27 @@ int main() {
 
 	scrabble.startGame();
 
-	/*scrabble.printHand(idLuis);
-
-	int indexes[] = {4};
-
-	scrabble.exchangeLetters(idLuis, indexes, 1);
-
-	cout << "After exchange letters 5: " << endl;*/
-
+	letterTile_t a = letterTile_t('O', 1);
+	letterTile_t b = letterTile_t('L', 1);
+	letterTile_t c = letterTile_t('H', 1);
+	letterTile_t d = letterTile_t('L', 1);
+	letterTile_t e = letterTile_t('E', 1);
+	letterTile_t f = letterTile_t('W', 1);
+	letterTile_t g = letterTile_t('F', 1);
+	vector<letterTile_t> fakeHand = { a, b, c, d, e, f, g };
+	
+	scrabble.players[0].setHand(fakeHand);
 	scrabble.printHand(idLuis);
 	
-	proposedWord_t proposedWord = proposedWord_t("A", 0, 0, 'd');
+	proposedWord_t proposedWord = proposedWord_t("hello", 7, 7, 'r');
 
 	cout << scrabble.addWordToGame(proposedWord, idLuis) << endl;
 
+	scrabble.printBoard();
+
 	scrabble.endGame();
+
+	cin >> idEric;
 	
 	return 1;
 }

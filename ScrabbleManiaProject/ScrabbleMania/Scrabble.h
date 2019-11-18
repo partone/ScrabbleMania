@@ -24,7 +24,7 @@ class Scrabble {
 		std::set<string> dictionary;
 		board_t *board;
 		vector<letterTile_t> letterPool;
-		vector<Player> players;
+		
 		gameSettings_t gameSettings;
 
 		//Generates the board based on the player number and assigns values to the board variable
@@ -40,18 +40,30 @@ class Scrabble {
 		* 
 		*/ 
 		bool isValidWord(proposedWord_t proposedWord, int playerId);
+
 		//Checks if a word exists in a given dictionary, returns true if it does.  False otherwise.
 		bool isInDictionary(string s);
+
 		//Checks if a word can be formed using the existing letters on the board and the player�s tiles
 		bool canFormWord(proposedWord_t proposedWord, int playerId);
+
 		// Check if words fits in board
 		// Check if there are letters already in position, that they are equal to the index in word
 		bool wordFitsInBoard(proposedWord_t proposedWord, vector<char> *neededLetters);
 
+		//Write word onto board
+		void placeLettersOnBoard(proposedWord_t proposedWord);
+
+		//Get the vector of values on the existing board where the word will be placed
+		vector<char> getBoardWordPath(proposedWord_t proposedWord);
+
+		//Returns the value of a word, taking in to account bonuses
+		int getWordValueWithBonuses(string word, vector<char> boardWordPath);
 
 		//Free board memory
 		void freeBoard();
 	public:
+		vector<Player> players;		//TODO: Move back to private
 		// Constructor
 		Scrabble();
 
@@ -92,6 +104,12 @@ class Scrabble {
 
 		//Returns the value of placing a word at a certain position on the game board
 		int getWordValue(proposedWord_t proposedWord);
+
+		//Get the char value from the board at a certain position
+		char getBoardPosValue(int x, int y);
+
+		//Set the board value at a position
+		void setBoardPosValue(int x, int y, char value);
 
 		//Print board
 		void printBoard();

@@ -20,25 +20,29 @@ Eric Parton
 
 using namespace std;
 
-class Player{
+class Player {
 private:
-  int id;
-  string name;
-  vector<letterTile_t> hand;
-  int score;
+	int id;
+	string name;
+	vector<letterTile_t> hand;
+	int score;
 public:
-  Player(int _id);
-  Player(int _id, string _name = "");
+	Player(int _id);
+	Player(int _id, string _name = "");
 
-  int getId();
+	int getId();
 
-  void setName(string _name);
-  string getName();
+	void setName(string _name);
+	string getName();
+	
+	void setScore(int _score);
+	int getScore();
 
-  void addTileToHand(letterTile_t tile);
-  vector<letterTile_t> * getHand();
+	void addTileToHand(letterTile_t tile);
+	vector<letterTile_t> * getHand();
+	void setHand(vector<letterTile_t> newHand);		//For testing only
 
-  bool hasNeededLetters(vector<char> neededLetters);
+	bool hasNeededLetters(vector<char> neededLetters);
 };
 
 #endif  /* NOT PLAYER_H */

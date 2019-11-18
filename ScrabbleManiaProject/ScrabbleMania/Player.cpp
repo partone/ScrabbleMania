@@ -31,21 +31,49 @@ vector<letterTile_t> * Player::getHand(){
   return &hand;
 }
 
-// FIXME: Check that player has the tiles needed to form word
-bool Player::hasNeededLetters(vector<char> neededLetters){
-  int i = 0;
-  set<int> usedIndexes;
-  while(i < hand.size()){
-    for(int j = 0; j < neededLetters.size(); j++){
-      if((neededLetters[j] == hand[i].letter) && (usedIndexes.find(i) != usedIndexes.end())){
-        cout << neededLetters[j] << endl;
-        usedIndexes.insert(i);
-        neededLetters.erase(neededLetters.begin() + j);
-        break;
-      }
-    }
-    i++;
-  }
+void Player::setHand(vector<letterTile_t> newHand) {
+	hand = newHand;
+}
 
-  return neededLetters.empty();
+void Player::setScore(int _score) {
+	score = _score;
+}
+
+int Player::getScore() {
+	return score;
+}
+
+int Player::getId() {
+	return id;
+}
+
+// Check that player has the tiles needed to form word
+bool Player::hasNeededLetters(vector<char> neededLetters){
+	int i = 0;
+	int j;
+	vector <letterTile_t> handCopy = hand;
+
+	//For each letter needed
+	while(i < neededLetters.size()){
+		j = 0;
+		//For each letter in the copy of the player's hand
+		while (j < handCopy.size()) {
+			//If the hand letter matches the letter needed, erase it in both vectors
+			if (handCopy[j].letter == neededLetters[i]) {
+				handCopy.erase(handCopy.begin() + j);
+				neededLetters.erase(neededLetters.begin() + i);
+				//Reduce the i counter to account for there being a new letter in its place
+				i--;
+				//Finish the search for this letter
+				j = handCopy.size();
+			}
+			else {
+				//Check the next index
+				j++;
+			}
+		}
+		//Check the next letter needed
+		i++;
+	}
+	return neededLetters.empty();
 }
