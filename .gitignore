@@ -4,3 +4,6 @@ ScrabbleManiaProject/ScrabbleMania/.vs/ScrabbleMania/v16/Browse.VC.opendb
 
 ScrabbleManiaProject/ScrabbleMania/scrabble
 ScrabbleManiaProject/ScrabbleMania/scrabble.dSYM/*
+*.ipch
+ScrabbleManiaProject/ScrabbleMania/.vs/ScrabbleMania/v15/Browse.VC.opendb
+ScrabbleManiaProject/ScrabbleMania/.vs/ScrabbleMania/v15/Browse.VC.db
