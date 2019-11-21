@@ -21,6 +21,7 @@ using namespace std;
 class Scrabble {
 	private:
 		bool hasGameStarted;
+		bool isFirstGameTurn;
 		std::set<string> dictionary;
 		board_t *board;
 		vector<letterTile_t> letterPool;

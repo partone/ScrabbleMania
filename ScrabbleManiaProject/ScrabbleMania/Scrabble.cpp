@@ -10,6 +10,7 @@ Eric Parton
 // Constructor
 Scrabble::Scrabble(){
 	hasGameStarted = false;
+	isFirstGameTurn = true;
 	board = NULL;
 }
 
@@ -223,6 +224,12 @@ bool Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 	int wordValue = getWordValue(proposedWord);
 	cout << proposedWord.word << " scores " << wordValue << endl;
 	players[playerId].setScore(players[playerId].getScore() + wordValue);
+
+	// Check if this was the first game turn
+	if(isFirstGameTurn){
+		isFirstGameTurn = false;
+	}
+
 	return true;
 }
 
@@ -275,8 +282,16 @@ bool Scrabble::isValidWord(proposedWord_t proposedWord, int playerId) {
 bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 	vector<char> neededLetters;
 	// Check if words fits in board and if there are letters already in position, that they are equal to the index in word
+	bool isWordFitting = wordFitsInBoard(proposedWord, &neededLetters);
+
+	// Check if is a valid word, using at least a letter of other word if it's not the first game turn
+	if(!isFirstGameTurn && (proposedWord.word.length() <= neededLetters.size())){
+		cout << "Error: invalid word, it should use at least one letter from another word!" << endl;
+		return false;
+	}
+
 	// Check if player has the missing letters
-	return wordFitsInBoard(proposedWord, &neededLetters) && players[playerId].hasNeededLetters(neededLetters);
+	return isWordFitting && players[playerId].hasNeededLetters(neededLetters);
 }
 
 // Check if words fits in board

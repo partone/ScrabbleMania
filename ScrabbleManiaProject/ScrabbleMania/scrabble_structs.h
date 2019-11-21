@@ -60,7 +60,7 @@ typedef struct proposed_word_struct {
 		start = coordinate_t();
 		direction = 'u';
 	}
-	proposed_word_struct(string _word, int _x, int _y, char _direction){
+	proposed_word_struct(string _word, int _y, int _x, char _direction){
 		// Change word to uppercase
 		std::transform(_word.begin(), _word.end(),_word.begin(), ::toupper);
 		word = _word;
