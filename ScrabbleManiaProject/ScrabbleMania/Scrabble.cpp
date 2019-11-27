@@ -282,7 +282,9 @@ bool Scrabble::isValidWord(proposedWord_t proposedWord, int playerId) {
 bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 	vector<char> neededLetters;
 	// Check if words fits in board and if there are letters already in position, that they are equal to the index in word
-	bool isWordFitting = wordFitsInBoard(proposedWord, &neededLetters);
+	if (!wordFitsInBoard(proposedWord, &neededLetters)){
+		return false;
+	}
 
 	// Check if is a valid word, using at least a letter of other word if it's not the first game turn
 	if(!isFirstGameTurn && (proposedWord.word.length() <= neededLetters.size())){
@@ -291,7 +293,12 @@ bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 	}
 
 	// Check if player has the missing letters
-	return isWordFitting && players[playerId].hasNeededLetters(neededLetters);
+	if(!players[playerId].hasNeededLetters(neededLetters)){
+		cout << "Error: " << players[playerId].getName() << " doesn't have the necessary letters!" << endl;
+		return false;
+	}
+
+	return true;
 }
 
 // Check if words fits in board

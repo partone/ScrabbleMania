@@ -42,13 +42,14 @@ int main() {
 	
 	proposedWord_t proposedWord = proposedWord_t("hello", 7, 7, 'r');
 
-	cout << scrabble.addWordToGame(proposedWord, idLuis) << endl;
+	scrabble.addWordToGame(proposedWord, idLuis);
 
 	scrabble.printBoard();
 
 	vector<letterTile_t> fakeHand2;
 	fakeHand2.push_back(letterTile_t('O', 1));
 	fakeHand2.push_back(letterTile_t('H', 1));
+	fakeHand2.push_back(letterTile_t('L', 1));
 	fakeHand2.push_back(letterTile_t('L', 1));
 	fakeHand2.push_back(letterTile_t('E', 1));
 	fakeHand2.push_back(letterTile_t('W', 1));
