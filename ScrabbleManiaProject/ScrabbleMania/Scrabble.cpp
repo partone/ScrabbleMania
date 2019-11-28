@@ -9,7 +9,7 @@ Eric Parton
 
 // Constructor
 Scrabble::Scrabble(){
-	hasGameStarted = false;
+	hasActiveGame = false;
 	isFirstGameTurn = true;
 	board = NULL;
 }
@@ -17,7 +17,7 @@ Scrabble::Scrabble(){
 // New player wants to connect to game
 int Scrabble::addPlayerToGame(string name){
 	int id = -1;
-	if (!hasGameStarted){
+	if (!hasActiveGame){
 		// The id will be its index at players' vector
 		id = players.size();
 		Player newPlayer = Player(id, name);
@@ -35,8 +35,8 @@ void Scrabble::setSettings(string dictionaryFileName){
 
 // Start the game
 void Scrabble::startGame(){
-	if(!hasGameStarted) {
-		hasGameStarted = true;
+	if(!hasActiveGame) {
+		hasActiveGame = true;
 		fillDictionary();
 		generateBoard();
 		generateLetterPool();
@@ -52,8 +52,8 @@ void Scrabble::startGame(){
 
 // End the game
 void Scrabble::endGame(){
-	if(hasGameStarted) {
-		hasGameStarted = false;
+	if(hasActiveGame) {
+		hasActiveGame = false;
 
 		freeBoard();
 
@@ -473,19 +473,55 @@ void Scrabble::generateBoard() {
 
 //Print board
 void Scrabble::printBoard() {
+
+	/*
+	Sample
+	  9   10  11
+	 --- --- ---
+	|   | 3 | t |
+	 --- --- ---
+	|   |   | h |
+	 --- --- ---
+	|   |   | e |
+	 --- --- ---
+
+	*/
+
 	// print headings
-	printf("  ");
+	printf("\n");
+	printf("    ");
 	for(int i = 0; i < board->size; i++){
-		printf("%2d ", i+1);
+		printf("  %d", i+1);
+		if(i+1 < 10) {
+			printf(" ");
+		}
 	}
 	printf("\n");
+
+	printBoardSeparator();
+
+	// Print board
 	for(int i = 0; i < board->size; i++){
-		printf("%2d ", i+1);
+		printf("%2d  ", i+1);
+
 		for(int j = 0; j < board->size; j++){
-			printf("%c  ", board->data[j][i]);
+			printf("| %c ", board->data[j][i] != '0' ? board->data[j][i] : ' ');
 		}
-		printf("\n");
+
+		printf("|\n");
+		printBoardSeparator();
 	}
+
+	printf("\n");
+}
+
+// Print horizontal board separator
+void Scrabble::printBoardSeparator(){
+	printf("    ");
+	for(int i = 0; i < board->size; i++){
+		printf(" ---");
+	}
+	printf("\n");
 }
 
 //Get the char value from the board at a certain position

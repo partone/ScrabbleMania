@@ -20,7 +20,6 @@ using namespace std;
 
 class Scrabble {
 	private:
-		bool hasGameStarted;
 		bool isFirstGameTurn;
 		std::set<string> dictionary;
 		board_t *board;
@@ -30,6 +29,10 @@ class Scrabble {
 
 		//Generates the board based on the player number and assigns values to the board variable
 		void generateBoard();
+
+		// Print horizontal board separator
+		void printBoardSeparator();
+
 		// Fill dictionary with the settings from the user
 		void fillDictionary();
 
@@ -64,6 +67,8 @@ class Scrabble {
 		//Free board memory
 		void freeBoard();
 	public:
+		bool hasActiveGame;
+		
 		vector<Player> players;		//TODO: Move back to private
 		// Constructor
 		Scrabble();
