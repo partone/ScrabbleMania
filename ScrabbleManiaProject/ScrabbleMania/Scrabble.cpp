@@ -12,6 +12,7 @@ Scrabble::Scrabble(){
 	hasActiveGame = false;
 	isFirstGameTurn = true;
 	board = NULL;
+	playerNumber = 0;
 }
 
 // New player wants to connect to game
@@ -23,7 +24,7 @@ int Scrabble::addPlayerToGame(string name){
 		Player newPlayer = Player(id, name);
 		players.push_back(newPlayer);
 	}else{
-		// Do not add it but let it expectate
+		// Do not add it but let it spectate
 	}
 	return id;
 }
@@ -43,7 +44,7 @@ void Scrabble::startGame(){
 		printBoard();
 
 		// Give 7 letters to each player
-		for(int i = 0; i < players.size(); i++){
+		for(int i = 0; (unsigned)i < players.size(); i++){
 			drawLettersAndAddToHand(HAND_SIZE, i);
 		}
 
@@ -65,9 +66,9 @@ void Scrabble::endGame(){
 //Prints a set of scrabble tiles
 void Scrabble::printHand(int playerId) {
 	vector<letterTile_t> *hand = players[playerId].getHand();
-	for (int i = 0; i < hand->size(); i++) {
+	for (int i = 0; (unsigned)i < hand->size(); i++) {
 		cout << hand->at(i).letter << " " << hand->at(i).value;
-		if (i != hand->size() - 1) {
+		if ((unsigned)i != hand->size() - 1) {
 			cout << " // ";
 		}
 	}
@@ -87,7 +88,7 @@ void Scrabble::fillDictionary(){
 	file.close();
 	}
 
-	else cout << "Unable to open file"; 
+	else cout << "Unable to open file";
 }
 
 //Generate the pool of letters to be played with in accordance with the English Scrabble letter frequency
@@ -96,17 +97,17 @@ void Scrabble::generateLetterPool() {
 						'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E',
 						'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
 						'I', 'I', 'I', 'I', 'I', 'I', 'I', 'I', 'I',
-						'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 
-						'N', 'N', 'N', 'N', 'N', 'N', 
+						'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+						'N', 'N', 'N', 'N', 'N', 'N',
 						'R', 'R', 'R', 'R', 'R', 'R',
-						'T', 'T', 'T', 'T', 'T', 'T', 
-						'L', 'L', 'L', 'L', 
-						'S', 'S', 'S', 'S', 
-						'U', 'U', 'U', 'U', 
-						'D', 'D', 'D', 'D', 
-						'G', 'G', 'G', 
+						'T', 'T', 'T', 'T', 'T', 'T',
+						'L', 'L', 'L', 'L',
+						'S', 'S', 'S', 'S',
+						'U', 'U', 'U', 'U',
+						'D', 'D', 'D', 'D',
+						'G', 'G', 'G',
 						'B', 'B',
-						'C', 'C', 
+						'C', 'C',
 						'M', 'M',
 						'P', 'P',
 						'F', 'F',
@@ -124,14 +125,14 @@ void Scrabble::generateLetterPool() {
 
 	//Go around the letter list adding letters until enough tiles have been pushed
 	for (int i = 0; i < numberOfCycles; i++) {
-		letterTile_t tmp;								//Create a generic letter tile 
+		letterTile_t tmp;								//Create a generic letter tile
 		tmp.letter = letterList[cycler];			//Assign it a letter
 		tmp.value = getLetterValue(tmp.letter);		//Get the letter's value
 		letterPool.push_back(tmp);					//Push the new letter in
 
 		cycler++;
 		//If it reaches the end of the list, go back to the start
-		if(cycler >= sizeof(letterList)/sizeof(*letterList))
+		if((unsigned)cycler >= sizeof(letterList)/sizeof(*letterList))
 			cycler = 0;
 	}
 
@@ -150,12 +151,12 @@ void Scrabble::exchangeLetters(int playerId, int indexes[], size_t numberOfIndex
 	letterTile_t letterTile;
 
 	// Loop through the received indexes of tiles
-	for(int i = 0; i < numberOfIndexes; i++) {
+	for(int i = 0; (unsigned)i < numberOfIndexes; i++) {
 		index = indexes[i];
 		// Get the tile
 		letterTile = hand->at(index);
 		// Return the tile to the letterPool
-		letterPool.insert(letterPool.begin(), letterTile); 
+		letterPool.insert(letterPool.begin(), letterTile);
 		// Remove it from the hand
 		hand->erase(hand->begin() + index);
 		// Draw a new letter to the hand at the same position
@@ -174,7 +175,7 @@ void Scrabble::drawLettersAndAddToHand(int numberOfLetters, int playerId) {
 	}
 }
 
-//Gets a letter from the pool and removes it from the pool 
+//Gets a letter from the pool and removes it from the pool
 letterTile_t Scrabble::drawLetterChar() {
 	letterTile_t returnVal = letterPool.back();		//Get the last element
 	letterPool.pop_back();					//Pop the last element
@@ -242,7 +243,7 @@ void Scrabble::placeLettersOnBoard(proposedWord_t proposedWord) {
 	char direction = proposedWord.direction;
 
 	vector<char> boardWordPath;
-	for (int i = 0; i < word.length(); i++) {
+	for (int i = 0; (unsigned)i < word.length(); i++) {
 		//Place the letter at the board position
 		setBoardPosValue(x, y, word[i]);
 		//Move to the next index
@@ -267,13 +268,13 @@ void Scrabble::placeLettersOnBoard(proposedWord_t proposedWord) {
 	return;
 }
 
-/* 
+/*
  * Checks if a word can be formed:
  * 1. Exists in the dictionary (isInDictionary function)
  * 2. Fits in the board considering the existing letters on it (canFormWord function)
  * 3. The player's tiles (canFormWord function)
- * 
- */ 
+ *
+ */
 bool Scrabble::isValidWord(proposedWord_t proposedWord, int playerId) {
 	return isInDictionary(proposedWord.word) && canFormWord(proposedWord, playerId);
 }
@@ -318,7 +319,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 		case 'u':
 			// if up, last letter coordinate will be in coordinate y
 			coordinateLastLetter = proposedWord.start.y;
-			while(coordinateLastLetter > -1 && i < proposedWord.word.size()){
+			while(coordinateLastLetter > -1 && (unsigned)i < proposedWord.word.size()){
 				if(board->data[proposedWord.start.x][coordinateLastLetter] < '5'){
 					// It means it is empty with value of 0,1,2,3,4
 					// Add letter to neededLetters vector
@@ -335,7 +336,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 		case 'd':
 			// if down, last letter coordinate will be in coordinate y
 			coordinateLastLetter = proposedWord.start.y;
-			while(coordinateLastLetter < board->size && i < proposedWord.word.size()){
+			while(coordinateLastLetter < board->size && (unsigned)i < proposedWord.word.size()){
 				if(board->data[proposedWord.start.x][coordinateLastLetter] < '5'){
 					// It means it is empty with value of 0,1,2,3,4
 					// Add letter to neededLetters vector
@@ -352,7 +353,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 		case 'l':
 			// if left, last letter coordinate will be in coordinate x
 			coordinateLastLetter = proposedWord.start.x;
-			while(coordinateLastLetter > -1 && i < proposedWord.word.size()){
+			while(coordinateLastLetter > -1 && (unsigned)i < proposedWord.word.size()){
 				if(board->data[coordinateLastLetter][proposedWord.start.y] < '5'){
 					// It means it is empty with value of 0,1,2,3,4
 					// Add letter to neededLetters vector
@@ -369,7 +370,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 		case 'r':
 			// if right, last letter coordinate will be in coordinate x
 			coordinateLastLetter = proposedWord.start.x;
-			while(coordinateLastLetter < board->size && i < proposedWord.word.size()){
+			while(coordinateLastLetter < board->size && (unsigned)i < proposedWord.word.size()){
 				if(board->data[coordinateLastLetter][proposedWord.start.y] < '5'){
 					// It means it is empty with value of 0,1,2,3,4
 					// Add letter to neededLetters vector
@@ -388,7 +389,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 	}
 
 	// It means the word does not fit in the board's bounds
-	if(i < proposedWord.word.size()){
+	if((unsigned)i < proposedWord.word.size()){
 		printf("Error: proposed word must be within the board limits\n");
 		return false;
 	}
@@ -553,7 +554,7 @@ vector<char> Scrabble::getBoardWordPath(proposedWord_t proposedWord) {
 	char direction = proposedWord.direction;
 
 	vector<char> boardWordPath;
-	for (int i = 0; i < word.length(); i++) {
+	for (int i = 0; (unsigned)i < word.length(); i++) {
 		//Push the value and move to the next board position
 		boardWordPath.push_back(getBoardPosValue(x, y));
 		switch (direction) {
@@ -582,7 +583,7 @@ int Scrabble::getWordValueWithBonuses(string word, vector<char> boardWordPath) {
 	int value = 0;
 	int letterValue = 0;
 	int wordMultiplier = 1;
-	for (int i = 0; i < word.length(); i++) {
+	for (int i = 0; (unsigned)i < word.length(); i++) {
 		//Get the value of the letter
 		letterValue = getLetterValue(word[i]);
 		//Check if it can be multiplied by anything
@@ -613,4 +614,18 @@ int Scrabble::getWordValueWithBonuses(string word, vector<char> boardWordPath) {
 	//Multiply by any word multipliers at the end
 	value *= wordMultiplier;
 	return value;
+}
+
+void Scrabble::printScores() {
+	for (int i = 0; (unsigned)i < players.size(); i++) {
+		players[i].printScore();
+	}
+}
+
+void Scrabble::setPlayerNumber(int pn) {
+	playerNumber = pn;
+}
+
+int Scrabble::getPlayerNumber() {
+	return playerNumber;
 }

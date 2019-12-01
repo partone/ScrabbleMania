@@ -54,10 +54,10 @@ bool Player::hasNeededLetters(vector<char> neededLetters){
 	vector <letterTile_t> handCopy = hand;
 
 	//For each letter needed
-	while(i < neededLetters.size()){
+	while((unsigned)i < neededLetters.size()){
 		j = 0;
 		//For each letter in the copy of the player's hand
-		while (j < handCopy.size()) {
+		while ((unsigned)j < handCopy.size()) {
 			//If the hand letter matches the letter needed, erase it in both vectors
 			if (handCopy[j].letter == neededLetters[i]) {
 				handCopy.erase(handCopy.begin() + j);
@@ -76,4 +76,8 @@ bool Player::hasNeededLetters(vector<char> neededLetters){
 		i++;
 	}
 	return neededLetters.empty();
+}
+
+void Player::printScore() {
+	cout << name << "\t" << score << endl;
 }

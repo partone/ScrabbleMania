@@ -43,6 +43,7 @@ public:
 	void setHand(vector<letterTile_t> newHand);		//For testing only
 
 	bool hasNeededLetters(vector<char> neededLetters);
+	void printScore();
 };
 
 #endif  /* NOT PLAYER_H */

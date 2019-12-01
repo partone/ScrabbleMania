@@ -24,7 +24,8 @@ class Scrabble {
 		std::set<string> dictionary;
 		board_t *board;
 		vector<letterTile_t> letterPool;
-		
+		int playerNumber;
+		vector<Player> players;
 		gameSettings_t gameSettings;
 
 		//Generates the board based on the player number and assigns values to the board variable
@@ -36,13 +37,13 @@ class Scrabble {
 		// Fill dictionary with the settings from the user
 		void fillDictionary();
 
-		/* 
+		/*
 		* Checks if a word can be formed:
 		* 1. Exists in the dictionary (isInDictionary function)
 		* 2. Fits in the board considering the existing letters on it (canFormWord function)
 		* 3. The player's tiles (canFormWord function)
-		* 
-		*/ 
+		*
+		*/
 		bool isValidWord(proposedWord_t proposedWord, int playerId);
 
 		//Checks if a word exists in a given dictionary, returns true if it does.  False otherwise.
@@ -68,8 +69,7 @@ class Scrabble {
 		void freeBoard();
 	public:
 		bool hasActiveGame;
-		
-		vector<Player> players;		//TODO: Move back to private
+
 		// Constructor
 		Scrabble();
 
@@ -119,7 +119,23 @@ class Scrabble {
 
 		//Print board
 		void printBoard();
+
+		//Print all players' scores
+		void printScores();
+
+		//Set the number of players
+		void setPlayerNumber(int pn);
+
+		//Get the number of players
+		int getPlayerNumber();
 };
+
+//The struct to be sent to the thread
+typedef struct clientThreadDataStruct {
+	Scrabble * scrabble;
+	int connection_fd;
+} clientThreadData;
+
 
 /*
 References
