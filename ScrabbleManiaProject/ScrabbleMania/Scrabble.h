@@ -24,9 +24,11 @@ class Scrabble {
 		std::set<string> dictionary;
 		board_t *board;
 		vector<letterTile_t> letterPool;
-		int playerNumber;
 		vector<Player> players;
 		gameSettings_t gameSettings;
+
+		// Variable for knowing whose turn it is
+		int turn;
 
 		//Generates the board based on the player number and assigns values to the board variable
 		void generateBoard();
@@ -76,8 +78,8 @@ class Scrabble {
 		// New player wants to connect to game
 		int addPlayerToGame(string name);
 
-		// Set settings wanted by user
-		void setSettings(string dictionaryFileName);
+		// Set dictionary wanted by user
+		void setDictionary(string dictionaryFileName);
 
 		// Start the game
 		void startGame();
@@ -87,6 +89,18 @@ class Scrabble {
 
 		/*** Actions in Game ***/
 
+		// Get the name of the player
+		string getPlayerName(int playerId);
+
+		// Get the number of active players
+		int countActivePlayers();
+
+		// Get the number of players
+		int getPlayerNumber();
+
+		//Returns a set of letters in scrabble tiles, separated by commas
+		string getHand(int playerId);
+
 		//Prints a set of scrabble tiles
 		void printHand(int playerId);
 
@@ -94,7 +108,7 @@ class Scrabble {
 		void generateLetterPool();
 
 		// Exchange specific letters from hand for random letters of letter pool
-		void exchangeLetters(int playerId, int indexes[], size_t numberOfIndexes);
+		void exchangeLetters(int playerId, vector<int> indexes);
 
 		//Draw several letters from the pool and add them to a player's hand
 		void drawLettersAndAddToHand(int numberOfLetters, int playerId);
@@ -106,7 +120,7 @@ class Scrabble {
 		int getLetterValue(char c);
 
 		// Adds word to board if it's a valid one
-		bool addWordToGame(proposedWord_t proposedWord, int playerId);
+		int addWordToGame(proposedWord_t proposedWord, int playerId);
 
 		//Returns the value of placing a word at a certain position on the game board
 		int getWordValue(proposedWord_t proposedWord);
@@ -120,21 +134,24 @@ class Scrabble {
 		//Print board
 		void printBoard();
 
+		// Get board size
+		int getBoardSize();
+
 		//Print all players' scores
 		void printScores();
 
 		//Set the number of players
-		void setPlayerNumber(int pn);
+		void setSettingsPlayerNumber(int pn);
 
 		//Get the number of players
-		int getPlayerNumber();
-};
+		int getSettingsPlayerNumber();
 
-//The struct to be sent to the thread
-typedef struct clientThreadDataStruct {
-	Scrabble * scrabble;
-	int connection_fd;
-} clientThreadData;
+		// Get turn
+		int getTurn();
+
+		// Next turn
+		void nextTurn();
+};
 
 
 /*

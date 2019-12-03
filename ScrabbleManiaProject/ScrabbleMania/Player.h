@@ -26,9 +26,10 @@ private:
 	string name;
 	vector<letterTile_t> hand;
 	int score;
+	player_type_t playerType;
 public:
 	Player(int _id);
-	Player(int _id, string _name = "");
+	Player(int _id, string _name = "", player_type_t _playerType = ACTIVE);
 
 	int getId();
 
@@ -38,9 +39,15 @@ public:
 	void setScore(int _score);
 	int getScore();
 
+	void setPlayerType(player_type_t _playerType);
+	player_type_t getPlayerType();
+
 	void addTileToHand(letterTile_t tile);
 	vector<letterTile_t> * getHand();
 	void setHand(vector<letterTile_t> newHand);		//For testing only
+
+	//Prints a set of scrabble tiles
+	void printHand();
 
 	bool hasNeededLetters(vector<char> neededLetters);
 	void printScore();

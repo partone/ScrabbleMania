@@ -9,12 +9,14 @@ Player::Player(int _id){
   id = _id;
   name = "";
   score = 0;
+	playerType = ACTIVE;
 }
 
-Player::Player(int _id, string _name){
+Player::Player(int _id, string _name, player_type_t _playerType){
   id = _id;
   name = _name;
   score = 0;
+	playerType = _playerType;
 }
 void Player::setName(string _name){
   name = _name;
@@ -43,8 +45,27 @@ int Player::getScore() {
 	return score;
 }
 
+void Player::setPlayerType(player_type_t _playerType){
+	playerType = _playerType;
+}
+
+player_type_t Player::getPlayerType(){
+	return playerType;
+}
+
 int Player::getId() {
 	return id;
+}
+
+//Prints a set of scrabble tiles
+void Player::printHand() {
+	for (int i = 0; (unsigned)i < hand.size(); i++) {
+		cout << hand.at(i).letter << " " << hand.at(i).value;
+		if ((unsigned)i != hand.size() - 1) {
+			cout << " // ";
+		}
+	}
+	cout << endl;
 }
 
 // Check that player has the tiles needed to form word

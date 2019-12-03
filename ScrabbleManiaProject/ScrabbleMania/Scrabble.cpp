@@ -12,7 +12,8 @@ Scrabble::Scrabble(){
 	hasActiveGame = false;
 	isFirstGameTurn = true;
 	board = NULL;
-	playerNumber = 0;
+	gameSettings.playerNumber = 0;
+	turn = 0;
 }
 
 // New player wants to connect to game
@@ -21,23 +22,26 @@ int Scrabble::addPlayerToGame(string name){
 	if (!hasActiveGame){
 		// The id will be its index at players' vector
 		id = players.size();
-		Player newPlayer = Player(id, name);
+		Player newPlayer = Player(id, name, ACTIVE);
 		players.push_back(newPlayer);
 	}else{
 		// Do not add it but let it spectate
+		id = players.size();
+		Player newPlayer = Player(id, name, SPECTATOR);
+		players.push_back(newPlayer);
 	}
 	return id;
 }
 
-// Set settings wanted by user
-void Scrabble::setSettings(string dictionaryFileName){
+// Set dictionary wanted by user
+void Scrabble::setDictionary(string dictionaryFileName){
 	gameSettings.dictionaryFileName = dictionaryFileName;
 }
 
 // Start the game
 void Scrabble::startGame(){
 	if(!hasActiveGame) {
-		hasActiveGame = true;
+
 		fillDictionary();
 		generateBoard();
 		generateLetterPool();
@@ -48,6 +52,7 @@ void Scrabble::startGame(){
 			drawLettersAndAddToHand(HAND_SIZE, i);
 		}
 
+		hasActiveGame = true;
 	}
 }
 
@@ -58,21 +63,54 @@ void Scrabble::endGame(){
 
 		freeBoard();
 
+		// Rest turn 
+		turn = 0;
+
+		// Reset gameSettings
+		gameSettings.dictionaryFileName = "";
+		gameSettings.playerNumber = 0;
+
 		// TODO: calculate winner, etc...
 
 	}
 }
 
-//Prints a set of scrabble tiles
-void Scrabble::printHand(int playerId) {
-	vector<letterTile_t> *hand = players[playerId].getHand();
-	for (int i = 0; (unsigned)i < hand->size(); i++) {
-		cout << hand->at(i).letter << " " << hand->at(i).value;
-		if ((unsigned)i != hand->size() - 1) {
-			cout << " // ";
+// Get the name of the player
+string Scrabble::getPlayerName(int playerId){
+	return players[playerId].getName();
+}
+
+// Get the number of active players
+int Scrabble::countActivePlayers(){
+	int count = 0;
+	for(int i = 0; i < players.size(); i++){
+		if(players[i].getPlayerType() == ACTIVE){
+			count++;
 		}
 	}
-	cout << endl;
+	return count;
+}
+
+// Get the number of players
+int Scrabble::getPlayerNumber(){
+	return players.size();
+}
+
+//Returns a set of letters in scrabble tiles
+string Scrabble::getHand(int playerId){
+	string handString = "";
+
+	vector<letterTile_t> *hand = players[playerId].getHand();
+	for (int i = 0; (unsigned)i < hand->size(); i++) {
+		handString += hand->at(i).letter;
+	}
+
+	return handString;
+}
+
+//Prints a set of scrabble tiles
+void Scrabble::printHand(int playerId) {
+	players[playerId].printHand();
 }
 
 // Fill dictionary with the settings from the user
@@ -144,14 +182,14 @@ void Scrabble::generateLetterPool() {
 }
 
 // Exchange specific letters from hand for random letters of letter pool
-void Scrabble::exchangeLetters(int playerId, int indexes[], size_t numberOfIndexes){
+void Scrabble::exchangeLetters(int playerId, vector<int> indexes){
 	// Get the hand from playerId
 	vector<letterTile_t> *hand = players[playerId].getHand();
 	int index = 0;
 	letterTile_t letterTile;
 
 	// Loop through the received indexes of tiles
-	for(int i = 0; (unsigned)i < numberOfIndexes; i++) {
+	for(int i = 0; (unsigned)i < indexes.size(); i++) {
 		index = indexes[i];
 		// Get the tile
 		letterTile = hand->at(index);
@@ -213,9 +251,9 @@ int Scrabble::getLetterValue(char c) {
 }
 
 // Adds word to board if it's a valid one
-bool Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
+int Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 	if(!isValidWord(proposedWord, playerId)){
-		return false;
+		return -1;
 	}
 
 	//Write word onto board
@@ -231,7 +269,7 @@ bool Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 		isFirstGameTurn = false;
 	}
 
-	return true;
+	return wordValue;
 }
 
 //Write word onto board
@@ -516,6 +554,11 @@ void Scrabble::printBoard() {
 	printf("\n");
 }
 
+// Get board size
+int Scrabble::getBoardSize(){
+	return board->size;
+}
+
 // Print horizontal board separator
 void Scrabble::printBoardSeparator(){
 	printf("    ");
@@ -533,7 +576,6 @@ char Scrabble::getBoardPosValue(int x, int y) {
 //Set the board value at a position
 void Scrabble::setBoardPosValue(int x, int y, char value) {
 	board->data[x][y] = value;
-	return;
 }
 
 //Free board memory
@@ -622,10 +664,20 @@ void Scrabble::printScores() {
 	}
 }
 
-void Scrabble::setPlayerNumber(int pn) {
-	playerNumber = pn;
+void Scrabble::setSettingsPlayerNumber(int pn) {
+	gameSettings.playerNumber = pn;
 }
 
-int Scrabble::getPlayerNumber() {
-	return playerNumber;
+int Scrabble::getSettingsPlayerNumber() {
+	return gameSettings.playerNumber;
+}
+
+// Get turn
+int Scrabble::getTurn(){
+	return turn;
+}
+
+// Next turn
+void Scrabble::nextTurn(){
+	turn++;
 }

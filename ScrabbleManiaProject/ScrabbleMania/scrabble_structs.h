@@ -72,6 +72,7 @@ typedef struct proposed_word_struct {
 // Game seetings in each game
 typedef struct game_settings_struct {
 	string dictionaryFileName;
+	int playerNumber;
 	// TODO: add settings that the user can set
 
 	game_settings_struct(){
@@ -81,5 +82,8 @@ typedef struct game_settings_struct {
 		dictionaryFileName = _dictionaryFileName;
 	}
 } gameSettings_t;
+
+// Player types
+typedef enum player_type_enum {ACTIVE, SPECTATOR} player_type_t;
 
 #endif  /* NOT SCRABBLE_STRUCTS_H */

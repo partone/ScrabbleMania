@@ -3,14 +3,14 @@
 ### Variables for this project ###
 # These should be the only ones that need to be modified
 # The files that must be compiled, with a .o extension
-# OBJECTS = 
+OBJECTS = fatal_error.o sockets.o Player.o ClientScrabble.o Scrabble.o
 # The header files
-DEPENDS = scrabble_structs.h
+DEPENDS = scrabble_structs.h sockets.h fatal_error.h Player.h ClientScrabble.h Scrabble.h 
 # The executable programs to be created
-# CLIENT = client
-# SERVER = server
-SCRABBLE = Scrabble
-PLAYER = Player
+CLIENT = Client
+SERVER = Server
+# SCRABBLE = Scrabble
+# PLAYER = Player
 
 # Name of the project / zipfile
 MAIN = scrabble
@@ -36,23 +36,24 @@ CFLAGS = -Wall -g -pedantic # -O2
 
 # Default rule
 # all: $(CLIENT) $(SERVER)
-all: $(SCRABBLE) $(PLAYER)
+# all:  $(CLIENT) $(PLAYER) $(SCRABBLE) $(SERVER) 
+all:  $(CLIENT) $(SERVER) 
 
 # Rule to make the client program
-# $(CLIENT): $(CLIENT).o $(OBJECTS)
-# 	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+$(CLIENT): $(CLIENT).o $(OBJECTS)
+	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Rule to make the server program
-# $(SERVER): $(SERVER).o $(OBJECTS)
-# 	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+$(SERVER): $(SERVER).o $(OBJECTS)
+	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Rule to make the scrabble program
-$(SCRABBLE): $(SCRABBLE).o $(OBJECTS)
-	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+# $(SCRABBLE): $(SCRABBLE).o $(OBJECTS)
+# 	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 	# Rule to make the player program
-$(PLAYER): $(PLAYER).o $(OBJECTS)
-	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+# $(PLAYER): $(PLAYER).o $(OBJECTS)
+# 	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Rule to make the object files
 %.o: %.cpp $(DEPENDS)
@@ -60,7 +61,7 @@ $(PLAYER): $(PLAYER).o $(OBJECTS)
 
 # Clear the compiled files
 clean:
-	rm -rf *.o $(SCRABBLE) $(PLAYER)
+	rm -rf *.o $(CLIENT) $(SERVER)
 
 # Create a zip with the source code of the project
 # Useful for submitting assignments
