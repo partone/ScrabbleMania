@@ -149,8 +149,8 @@ void playGame(int connection_fd, bool *interrupted) {
 			recvString(connection_fd, buffer, BUFFER_SIZE);
 
 		}else{
-			string playersNameTurn;
-			sscanf(buffer, "%s", (char *)playersNameTurn.c_str());
+			string playersNameTurn(buffer);
+			// sscanf(buffer, "%s", (char *)playersNameTurn.c_str());
 
 			sprintf(buffer, "OK");
 			sendString(connection_fd, buffer, strlen(buffer)+1);
