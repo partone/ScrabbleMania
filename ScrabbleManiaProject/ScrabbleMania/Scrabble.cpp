@@ -63,7 +63,7 @@ void Scrabble::endGame(){
 
 		freeBoard();
 
-		// Rest turn 
+		// Rest turn
 		turn = 0;
 
 		// Reset gameSettings
@@ -83,7 +83,7 @@ string Scrabble::getPlayerName(int playerId){
 // Get the number of active players
 int Scrabble::countActivePlayers(){
 	int count = 0;
-	for(int i = 0; i < players.size(); i++){
+	for(int i = 0; (unsigned)i < players.size(); i++){
 		if(players[i].getPlayerType() == ACTIVE){
 			count++;
 		}

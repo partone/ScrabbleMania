@@ -95,15 +95,15 @@ void playGame(int connection_fd, bool *interrupted) {
 	ClientScrabble scrabble = ClientScrabble();
 
 	scrabble.setPlayersNumber(playersNumber);
-	
+
 	string handString;
-	// Receives hand 
+	// Receives hand
 	recvString(connection_fd, buffer, BUFFER_SIZE);
 
 	// Separate by char
 	vector<letterTile_t> hand;
 
-	for(int i = 0; i < strlen(buffer); i++){
+	for(int i = 0; (unsigned)i < strlen(buffer); i++){
 		hand.push_back(letterTile_t(buffer[i], scrabble.getLetterValue(buffer[i])));
 	}
 
@@ -176,7 +176,7 @@ void playGame(int connection_fd, bool *interrupted) {
 				int x;
 				int y;
 				char direction;
-				
+
 				sscanf(buffer, "%s %d %d %c", word, &x, &y, &direction);
 
 				string wordString(word);
@@ -224,7 +224,7 @@ void addWord(int connection_fd, ClientScrabble *scrabble) {
 
 		sprintf(buffer, "%s %d %d %c", (char *)word.c_str(), y - 1, x - 1, direction);
 		sendString(connection_fd, buffer, strlen(buffer)+1);
-		
+
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 		if(strcmp(buffer, "INVALID")){
 			sscanf(buffer, "%d", &wordValue);
@@ -260,12 +260,12 @@ void exchangeTiles(int connection_fd, ClientScrabble *scrabble, Player *player) 
 
 	string handString;
 
-	// Receives hand 
+	// Receives hand
 	recvString(connection_fd, buffer, BUFFER_SIZE);
 
 	vector<letterTile_t> hand;
 
-	for(int i = 0; i < strlen(buffer); i++){
+	for(int i = 0; (unsigned)i < strlen(buffer); i++){
 		hand.push_back(letterTile_t(buffer[i], scrabble->getLetterValue(buffer[i])));
 	}
 

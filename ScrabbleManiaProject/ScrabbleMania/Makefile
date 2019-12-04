@@ -5,7 +5,7 @@
 # The files that must be compiled, with a .o extension
 OBJECTS = fatal_error.o sockets.o Player.o ClientScrabble.o Scrabble.o
 # The header files
-DEPENDS = scrabble_structs.h sockets.h fatal_error.h Player.h ClientScrabble.h Scrabble.h 
+DEPENDS = scrabble_structs.h sockets.h fatal_error.h Player.h ClientScrabble.h Scrabble.h
 # The executable programs to be created
 CLIENT = Client
 SERVER = Server
@@ -18,7 +18,7 @@ MAIN = scrabble
 ### Variables for the compilation rules ###
 # These should work for most projects, but can be modified when necessary
 # The compiler program to use
-CC = g++
+CC = g++ -pthread
 # Options to use when compiling object files
 # NOTE the use of gnu99, because otherwise the socket structures are not included
 #  http://stackoverflow.com/questions/12024703/why-cant-getaddrinfo-be-found-when-compiling-with-gcc-and-std-c99
@@ -36,8 +36,8 @@ CFLAGS = -Wall -g -pedantic # -O2
 
 # Default rule
 # all: $(CLIENT) $(SERVER)
-# all:  $(CLIENT) $(PLAYER) $(SCRABBLE) $(SERVER) 
-all:  $(CLIENT) $(SERVER) 
+# all:  $(CLIENT) $(PLAYER) $(SCRABBLE) $(SERVER)
+all:  $(CLIENT) $(SERVER)
 
 # Rule to make the client program
 $(CLIENT): $(CLIENT).o $(OBJECTS)
@@ -68,6 +68,6 @@ clean:
 # Will clean the compilation first
 zip: clean
 	zip -r $(MAIN).zip *
-	
+
 # Indicate the rules that do not refer to a file
 .PHONY: clean all zip
