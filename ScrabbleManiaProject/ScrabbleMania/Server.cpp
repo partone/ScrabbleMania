@@ -182,8 +182,6 @@ void * clientHandler(void * arg) {
 	sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
 	sendString(connection_fd, buffer, strlen(buffer)+1);
 
-	printf("%s\n", buffer);
-
 	// Receives OK
 	recvString(connection_fd, buffer, BUFFER_SIZE);
 
@@ -206,17 +204,19 @@ void * clientHandler(void * arg) {
 				sprintf(buffer, "OK");
 				sendString(connection_fd, buffer, strlen(buffer)+1);
 				// Receives the tiles indexes separated by commas
-				string indexes;
+				
 				recvString(connection_fd, buffer, BUFFER_SIZE);
+				printf("Player wants to exchange: %s\n", buffer);
+				char indexes[BUFFER_SIZE];
 
-				sscanf(buffer, "%s", (char *)indexes.c_str());
+				strcpy(indexes, buffer);
+				
 				// Split indexes string by commas to get each index
-				std::stringstream ss(indexes);
+				char *string = strtok(indexes, ",");
 				vector<int> tilesIndexes;
-				for (int i; ss >> i;) {
-						tilesIndexes.push_back(i);    
-						if (ss.peek() == ',')
-							ss.ignore();
+				while(string != NULL){
+					tilesIndexes.push_back(atoi(string));
+					string = strtok(NULL, ",");
 				}
 				// Change tiles
 				scrabble->exchangeLetters(playerID, tilesIndexes);

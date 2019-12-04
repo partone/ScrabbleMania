@@ -252,7 +252,7 @@ void exchangeTiles(int connection_fd, ClientScrabble *scrabble, Player *player) 
 	recvString(connection_fd, buffer, BUFFER_SIZE);
 
 	string tiles;
-	cout << "Enter the indexes of the tiles separated by commas" << endl;
+	cout << "Enter the indexes of the tiles separated by commas (without spaces)" << endl;
 	cin >> tiles;
 
 	sprintf(buffer, "%s", (char *)tiles.c_str());
