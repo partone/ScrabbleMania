@@ -142,34 +142,34 @@ void * clientHandler(void * arg) {
 	//Get the player ID for turn management later on
 	playerID = scrabble->addPlayerToGame(buffer);
 
-	if (playerID == scrabble->getSettingsPlayerNumber() - 1) {
-		// Last player that could join as active type
-		sprintf(buffer, "%d %d", scrabble->getSettingsPlayerNumber(), playerID);
+	// Ask client for number of players, if it is the first to connect
+	if(playerID == 0){
+		// It is the first client to connect
+		sprintf(buffer, "SEND_PLAYER_NUMBER");
 		sendString(connection_fd, buffer, strlen(buffer)+1);
 
-		scrabble->startGame();
-		cout << "Game started" << endl;
+		int playerNumber = 0;
+
+		recvString(connection_fd, buffer, BUFFER_SIZE);
+		sscanf(buffer, "%d", &playerNumber);
+		scrabble->setSettingsPlayerNumber(playerNumber);
+
+		cout << "Received players number " << playerNumber << endl;
+
 	}else{
-		// Ask client for number of players, if it is the first to connect
-		if(scrabble->getSettingsPlayerNumber() == 0){
-			// It is the first client to connect
-			sprintf(buffer, "SEND_PLAYER_NUMBER");
-			sendString(connection_fd, buffer, strlen(buffer)+1);
+		// Wait for the first player to set gameSettings.playerNumber
+		while (scrabble->getSettingsPlayerNumber() == 0){ }
 
-			int playerNumber = 0;
+		sprintf(buffer, "%d %d", scrabble->getSettingsPlayerNumber(), playerID);
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+		// Receives OK
+		recvString(connection_fd, buffer, BUFFER_SIZE);
 
-			recvString(connection_fd, buffer, BUFFER_SIZE);
-			sscanf(buffer, "%d", &playerNumber);
-			scrabble->setSettingsPlayerNumber(playerNumber);
-
-			cout << "Received players number " << playerNumber << endl;
-
-		}else{
-			sprintf(buffer, "%d %d", scrabble->getSettingsPlayerNumber(), playerID);
-			sendString(connection_fd, buffer, strlen(buffer)+1);
-			// Receives OK
-			recvString(connection_fd, buffer, BUFFER_SIZE);
+		if (playerID == scrabble->getSettingsPlayerNumber() - 1) {
+			scrabble->startGame();
+			cout << "Game started" << endl;
 		}
+		
 	}
 
 	int turn = 0;
@@ -227,6 +227,7 @@ void * clientHandler(void * arg) {
 
 				*playerMadeMove = true;
 				*gameHasNewWord = false;
+				
 			}else{
 				char *word = new char[scrabble->getBoardSize() + 1];
 				int x;

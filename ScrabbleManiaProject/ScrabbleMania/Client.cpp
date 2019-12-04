@@ -76,6 +76,10 @@ void playGame(int connection_fd, bool *interrupted) {
 		sendString(connection_fd, buffer, strlen(buffer)+1);
 	}else{
 		sscanf(buffer, "%d %d", &playersNumber, &playerID);
+
+		// Send OK
+		sprintf(buffer, "OK");
+		sendString(connection_fd, buffer, strlen(buffer)+1);
 	}
 
 	Player player = Player(playerID, name);
@@ -145,12 +149,12 @@ void playGame(int connection_fd, bool *interrupted) {
 				}
 			}
 
-			// Receive OK
-			recvString(connection_fd, buffer, BUFFER_SIZE);
+			// Send OK
+			sprintf(buffer, "OK");
+			sendString(connection_fd, buffer, strlen(buffer)+1);
 
 		}else{
 			string playersNameTurn(buffer);
-			// sscanf(buffer, "%s", (char *)playersNameTurn.c_str());
 
 			sprintf(buffer, "OK");
 			sendString(connection_fd, buffer, strlen(buffer)+1);
@@ -179,7 +183,7 @@ void playGame(int connection_fd, bool *interrupted) {
 
 				cout << playersNameTurn << " added:" << endl;
 				cout << "\tWord: " << wordString << endl;
-				cout << "\tCoordinates: " << y << ", " << x << endl;
+				cout << "\tCoordinates: " << y+1 << ", " << x+1 << endl;
 				cout << "\tDirection: " << direction << endl;
 
 				proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
@@ -220,7 +224,7 @@ void addWord(int connection_fd, ClientScrabble *scrabble) {
 
 		sprintf(buffer, "%s %d %d %c", (char *)word.c_str(), y - 1, x - 1, direction);
 		sendString(connection_fd, buffer, strlen(buffer)+1);
-
+		
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 		if(strcmp(buffer, "INVALID")){
 			sscanf(buffer, "%d", &wordValue);
