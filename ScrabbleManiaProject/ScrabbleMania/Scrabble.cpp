@@ -4,6 +4,7 @@ Eric Parton
 */
 
 #include "Scrabble.h"
+#include "trim.h"
 
 #define HAND_SIZE 7
 
@@ -121,6 +122,7 @@ void Scrabble::fillDictionary(){
 	if (file.is_open()) {
 	while ( getline (file,line) ) {
 		// Save it in a the dictionary data structure
+			trim(line);
 			dictionary.insert(line);
 	}
 	file.close();
@@ -314,6 +316,7 @@ void Scrabble::placeLettersOnBoard(proposedWord_t proposedWord) {
  *
  */
 bool Scrabble::isValidWord(proposedWord_t proposedWord, int playerId) {
+	cout << proposedWord.word << " is in dictionary: " << isInDictionary(proposedWord.word) << endl;
 	return isInDictionary(proposedWord.word) && canFormWord(proposedWord, playerId);
 }
 
@@ -322,6 +325,7 @@ bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 	vector<char> neededLetters;
 	// Check if words fits in board and if there are letters already in position, that they are equal to the index in word
 	if (!wordFitsInBoard(proposedWord, &neededLetters)){
+		cout << "Error, invalid word placement" << endl;
 		return false;
 	}
 

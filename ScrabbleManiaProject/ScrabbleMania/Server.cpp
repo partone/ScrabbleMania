@@ -52,7 +52,7 @@ int main(int argc, char * argv[]) {
 	scrabble.setDictionary("dictionaries/english.txt");
 
 	// Set up variables for thread data
-	bool playerMadeMove;
+	bool playerMadeMove = false;
 	bool gameHasNewWord;
 	proposedWord_t addedWord;
 
@@ -169,11 +169,11 @@ void * clientHandler(void * arg) {
 			scrabble->startGame();
 			cout << "Game started" << endl;
 		}
-		
+
 	}
 
 	int turn = 0;
-	
+
 	// Wait until the game starts
 	while(!scrabble->hasActiveGame){
 	}
@@ -204,13 +204,13 @@ void * clientHandler(void * arg) {
 				sprintf(buffer, "OK");
 				sendString(connection_fd, buffer, strlen(buffer)+1);
 				// Receives the tiles indexes separated by commas
-				
+
 				recvString(connection_fd, buffer, BUFFER_SIZE);
 				printf("Player wants to exchange: %s\n", buffer);
 				char indexes[BUFFER_SIZE];
 
 				strcpy(indexes, buffer);
-				
+
 				// Split indexes string by commas to get each index
 				char *string = strtok(indexes, ",");
 				vector<int> tilesIndexes;
@@ -227,7 +227,7 @@ void * clientHandler(void * arg) {
 
 				*playerMadeMove = true;
 				*gameHasNewWord = false;
-				
+
 			}else{
 				char *word = new char[scrabble->getBoardSize() + 1];
 				int x;

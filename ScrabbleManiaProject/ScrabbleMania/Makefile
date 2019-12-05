@@ -3,9 +3,9 @@
 ### Variables for this project ###
 # These should be the only ones that need to be modified
 # The files that must be compiled, with a .o extension
-OBJECTS = fatal_error.o sockets.o Player.o ClientScrabble.o Scrabble.o
+OBJECTS = fatal_error.o sockets.o Player.o ClientScrabble.o Scrabble.o trim.o
 # The header files
-DEPENDS = scrabble_structs.h sockets.h fatal_error.h Player.h ClientScrabble.h Scrabble.h
+DEPENDS = scrabble_structs.h sockets.h fatal_error.h Player.h ClientScrabble.h Scrabble.h trim.h
 # The executable programs to be created
 CLIENT = Client
 SERVER = Server
