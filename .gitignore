@@ -7,3 +7,8 @@ ScrabbleManiaProject/ScrabbleMania/scrabble.dSYM/*
 *.ipch
 ScrabbleManiaProject/ScrabbleMania/.vs/ScrabbleMania/v15/Browse.VC.opendb
 ScrabbleManiaProject/ScrabbleMania/.vs/ScrabbleMania/v15/Browse.VC.db
+
+# Ignore executables
+ScrabbleManiaProject/ScrabbleMania/Client
+ScrabbleManiaProject/ScrabbleMania/Server
+ScrabbleManiaProject/ScrabbleMania/*.o

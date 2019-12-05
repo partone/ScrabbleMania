@@ -53,7 +53,7 @@ int main(int argc, char * argv[]) {
 
 	// Set up variables for thread data
 	bool playerMadeMove = false;
-	bool gameHasNewWord;
+	bool gameHasNewWord = false;
 	proposedWord_t addedWord;
 
 	//Set up the sever
@@ -171,6 +171,8 @@ void * clientHandler(void * arg) {
 		}
 
 	}
+
+	// TODO: if spectator joins after game has words, send the words to it
 
 	int turn = 0;
 
