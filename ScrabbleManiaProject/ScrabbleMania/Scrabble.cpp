@@ -209,6 +209,10 @@ void Scrabble::exchangeLetters(int playerId, vector<int> indexes){
 
 //Draw several letters from the pool and add them to a player's hand
 void Scrabble::drawLettersAndAddToHand(int numberOfLetters, int playerId) {
+	//Make sure there are enough letters to draw
+	if(numberOfLetters > letterPool.size()) {
+		numberOfLetters = letterPool.size();
+	}
 	//Push fresh pool values in to the hand
 	for (int i = 0; i < numberOfLetters; i++) {
 		players[playerId].addTileToHand(drawLetterChar());
