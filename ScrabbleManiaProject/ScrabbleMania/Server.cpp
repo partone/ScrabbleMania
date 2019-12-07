@@ -28,6 +28,11 @@ void waitForConnections(int server_fd, Scrabble *scrabble, bool *playerMadeMove,
 void * clientHandler(void * arg);
 void usage(char * program);
 
+//Declaration of thread condition variable			//TODO: Make this local
+pthread_cond_t playerTurnOverCond = PTHREAD_COND_INITIALIZER;
+//Mutex for the player turn
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 //The struct to be sent to the thread
 typedef struct clientThreadDataStruct {
 	Scrabble * scrabble;
@@ -35,6 +40,7 @@ typedef struct clientThreadDataStruct {
 	bool * playerMadeMove;
 	bool * gameHasNewWord;
 	proposedWord_t * addedWord;
+
 
 	int connection_fd;
 } clientThreadData;
@@ -46,6 +52,7 @@ int main(int argc, char * argv[]) {
 			usage(argv[0]);
 	}
 
+	srand(time(0));			//Initialise seed for random stuff
 	Scrabble scrabble = Scrabble();
 
 	// TODO: ask this to the first player
@@ -192,6 +199,7 @@ void * clientHandler(void * arg) {
 		// Calculate turn of player
 		turn = scrabble->getTurn() % scrabble->getSettingsPlayerNumber();
 
+
 		if(turn == playerID) {
 			cout << "Turn of " << turn << endl;
 			// turn of this thread player
@@ -271,6 +279,12 @@ void * clientHandler(void * arg) {
 				*addedWord = proposedWord;
 				*gameHasNewWord = true;
 				*playerMadeMove = true;
+				//Start the mutex here so it affects all players
+				pthread_mutex_lock(&lock);
+				pthread_cond_signal(&playerTurnOverCond); 	//Signal the other threads to continue
+				cout << "Sending turn over signal" << endl;
+				//Unlock the mutex
+				pthread_mutex_unlock(&lock);
 			}
 
 			// Next turn in game
@@ -285,8 +299,11 @@ void * clientHandler(void * arg) {
 			recvString(connection_fd, buffer, BUFFER_SIZE);
 
 			// Wait until the turn player adds word to board
-			while(!*playerMadeMove){
-			}
+			//while(!*playerMadeMove){
+			//}
+			cout << "Waiting for turn over signal" << endl;
+			pthread_cond_wait(&playerTurnOverCond, &lock);
+			cout << "Received turn over signal" << endl;
 
 			// Check what player did
 			if(*gameHasNewWord) {
@@ -300,6 +317,8 @@ void * clientHandler(void * arg) {
 			}
 
 		}
+
+
 		*playerMadeMove = false;
 
 		// Receives OK

@@ -159,8 +159,8 @@ void playGame(int connection_fd, bool *interrupted) {
 			sprintf(buffer, "OK");
 			sendString(connection_fd, buffer, strlen(buffer)+1);
 
-			cout << "Turn of " << playersNameTurn << endl;
-			cout << "Waiting for its move" << endl;
+			cout << playersNameTurn << "'s turn" << endl;
+			cout << "Waiting for their move" << endl;
 
 			recvString(connection_fd, buffer, BUFFER_SIZE);
 
