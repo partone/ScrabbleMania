@@ -151,6 +151,9 @@ class Scrabble {
 
 		// Next turn
 		void nextTurn();
+
+		//Remove tile from a player's hand
+		void removeTilesFromHand(int playerId, vector<char> neededLetters);
 };
 
 

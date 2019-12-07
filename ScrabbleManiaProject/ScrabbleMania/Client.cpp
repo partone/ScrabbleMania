@@ -219,7 +219,7 @@ void addWord(int connection_fd, ClientScrabble *scrabble) {
 		cout << "Y coordinate?" << endl;
 		cin >> y;
 
-		cout << "Which direction will it be facing? (u: up, d: down, r: right, l:left)" << endl;
+		cout << "Which direction will it be facing? (d: down, r: right)" << endl;
 		cin >> direction;
 
 		sprintf(buffer, "%s %d %d %c", (char *)word.c_str(), y - 1, x - 1, direction);

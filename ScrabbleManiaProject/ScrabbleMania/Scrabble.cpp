@@ -210,7 +210,7 @@ void Scrabble::exchangeLetters(int playerId, vector<int> indexes){
 //Draw several letters from the pool and add them to a player's hand
 void Scrabble::drawLettersAndAddToHand(int numberOfLetters, int playerId) {
 	//Make sure there are enough letters to draw
-	if(numberOfLetters > letterPool.size()) {
+	if((unsigned)numberOfLetters > letterPool.size()) {
 		numberOfLetters = letterPool.size();
 	}
 	//Push fresh pool values in to the hand
@@ -269,6 +269,7 @@ int Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 	int wordValue = getWordValue(proposedWord);
 	cout << proposedWord.word << " scores " << wordValue << endl;
 	players[playerId].setScore(players[playerId].getScore() + wordValue);
+
 
 	// Check if this was the first game turn
 	if(isFirstGameTurn){
@@ -345,7 +346,21 @@ bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 		return false;
 	}
 
+	//Remove the tiles from the player's hand
+	removeTilesFromHand(playerId, neededLetters);
+
+	//Add new tiles to the player's hand
+	int numberOfFreshLettersNeeded = HAND_SIZE - neededLetters.size();
+	drawLettersAndAddToHand(numberOfFreshLettersNeeded, playerId);
+
 	return true;
+}
+
+//Remove the tiles from the player's hand
+void Scrabble::removeTilesFromHand(int playerId, vector<char> neededLetters) {
+		for(int i = 0; (unsigned)i < neededLetters.size(); i++) {
+			players[playerId].removeTileFromHand(neededLetters[i]);
+		}
 }
 
 // Check if words fits in board
@@ -362,7 +377,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 	int coordinateLastLetter = 0;
 	int i = 0;
 	switch (proposedWord.direction){
-		case 'u':
+		/*case 'u':
 			// if up, last letter coordinate will be in coordinate y
 			coordinateLastLetter = proposedWord.start.y;
 			while(coordinateLastLetter > -1 && (unsigned)i < proposedWord.word.size()){
@@ -378,7 +393,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 				coordinateLastLetter--;
 				i++;
 			}
-		break;
+		break;*/
 		case 'd':
 			// if down, last letter coordinate will be in coordinate y
 			coordinateLastLetter = proposedWord.start.y;
@@ -396,7 +411,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 				i++;
 			}
 		break;
-		case 'l':
+		/*case 'l':
 			// if left, last letter coordinate will be in coordinate x
 			coordinateLastLetter = proposedWord.start.x;
 			while(coordinateLastLetter > -1 && (unsigned)i < proposedWord.word.size()){
@@ -412,7 +427,7 @@ bool Scrabble::wordFitsInBoard(proposedWord_t proposedWord, vector<char> *needed
 				coordinateLastLetter--;
 				i++;
 			}
-		break;
+		break;*/
 		case 'r':
 			// if right, last letter coordinate will be in coordinate x
 			coordinateLastLetter = proposedWord.start.x;

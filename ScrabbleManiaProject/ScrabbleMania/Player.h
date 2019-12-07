@@ -35,7 +35,7 @@ public:
 
 	void setName(string _name);
 	string getName();
-	
+
 	void setScore(int _score);
 	int getScore();
 
@@ -43,6 +43,8 @@ public:
 	player_type_t getPlayerType();
 
 	void addTileToHand(letterTile_t tile);
+	void removeTileFromHand(char letter);
+
 	vector<letterTile_t> * getHand();
 	void setHand(vector<letterTile_t> newHand);		//For testing only
 
@@ -54,4 +56,3 @@ public:
 };
 
 #endif  /* NOT PLAYER_H */
-
