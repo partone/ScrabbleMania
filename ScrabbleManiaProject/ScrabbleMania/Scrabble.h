@@ -83,6 +83,9 @@ class Scrabble {
 		// New player wants to connect to game
 		int addPlayerToGame(string name);
 
+		// Get added words as string
+		string getAddedWords();
+
 		// Set dictionary wanted by user
 		void setDictionary(string dictionaryFileName);
 

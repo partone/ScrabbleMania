@@ -22,6 +22,7 @@ Eric Parton
 #define HAND_SIZE 7
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 1024
+#define BUFFER_LONG_SIZE 2048
 
 // Function declarations
 void waitForConnections(int server_fd, Scrabble *scrabble);
@@ -127,6 +128,7 @@ void waitForConnections(int server_fd, Scrabble *scrabble)
 void * clientHandler(void * arg) {
 	cout << "Thread created\n";
 	char buffer[BUFFER_SIZE];
+	char bufferLong[BUFFER_LONG_SIZE];
 	Scrabble * scrabble;
 	bool * gameHasNewWord;
 	bool * playerMadeMove;
@@ -157,14 +159,13 @@ void * clientHandler(void * arg) {
 
 	//Get the player ID for turn management later on
 	playerID = scrabble->addPlayerToGame(buffer);
+	int playerNumber = 0;
 
 	// Ask client for number of players, if it is the first to connect
 	if(playerID == 0){
 		// It is the first client to connect
 		sprintf(buffer, "SEND_PLAYER_NUMBER");
 		sendString(connection_fd, buffer, strlen(buffer)+1);
-
-		int playerNumber = 0;
 
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 		sscanf(buffer, "%d", &playerNumber);
@@ -176,19 +177,19 @@ void * clientHandler(void * arg) {
 		// Wait for the first player to set gameSettings.playerNumber
 		while (scrabble->getSettingsPlayerNumber() == 0){ }
 
-		sprintf(buffer, "%d %d", scrabble->getSettingsPlayerNumber(), playerID);
+		playerNumber = scrabble->getSettingsPlayerNumber();
+
+		sprintf(buffer, "%d %d", playerNumber, playerID);
 		sendString(connection_fd, buffer, strlen(buffer)+1);
 		// Receives OK
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 
-		if (playerID == scrabble->getSettingsPlayerNumber() - 1) {
+		if (playerID == playerNumber - 1) {
 			scrabble->startGame();
 			cout << "Game started" << endl;
 		}
 
 	}
-
-	// TODO: if spectator joins after game has words, send the words to it
 
 	int turn = 0;
 
@@ -196,9 +197,18 @@ void * clientHandler(void * arg) {
 	while(!scrabble->hasActiveGame){
 	}
 
-	// Send hand
-	sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
-	sendString(connection_fd, buffer, strlen(buffer)+1);
+	// Check if it's spectator
+	if (playerID >= playerNumber){
+		// Spectator
+		// Send words already in board
+		sprintf(bufferLong, "%s", (char *)scrabble->getAddedWords().c_str());
+		sendString(connection_fd, bufferLong, strlen(bufferLong)+1);
+	}else{
+		// Active player
+		// Send hand
+		sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+	}
 
 	// Receives OK
 	recvString(connection_fd, buffer, BUFFER_SIZE);
@@ -210,7 +220,7 @@ void * clientHandler(void * arg) {
 
 		// Check if there are still minimum 2 players
 		if(scrabble->countActivePlayers() < 2){
-
+			scrabble->endGame();
 		}
 
 		while(!scrabble->isPlayerStillInGame(turn)){
@@ -312,7 +322,6 @@ void * clientHandler(void * arg) {
 				// Check if game has ended
 				if(scrabble->getHand(playerID) == ""){
 					// Means that the player has used all its tiles and the letterpool is empty
-					scrabble->updateScoreboard();
 					scrabble->endGame();
 				}
 			}
@@ -379,7 +388,6 @@ void * clientHandler(void * arg) {
 }
 
 // TODO: read ctrl+c signal in server and let the clients know, return their score and position
-//scrabble->updateScoreboard();
 //scrabble->endGame();
 // for(int i = 0; i < players.size(); i++)
 		//scrabble->playerIsLeaving(i);

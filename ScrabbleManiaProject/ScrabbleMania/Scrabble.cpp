@@ -9,6 +9,7 @@ Eric Parton
 #define HAND_SIZE 7
 
 #define STRING_SIZE 100
+#define BUFFER_SIZE 2048
 
 // Constructor
 Scrabble::Scrabble(){
@@ -36,6 +37,24 @@ int Scrabble::addPlayerToGame(string name){
 	return id;
 }
 
+// Get added words as string
+string Scrabble::getAddedWords(){
+	char words[BUFFER_SIZE] = "";
+
+	for(int i = 0; i < addedWords.size(); i++){
+		proposedWord_t addedWord = addedWords[i];
+		char wordString[STRING_SIZE];
+
+		sprintf(wordString, "%s %d %d %c:", (char *)addedWord.word.c_str(), addedWord.start.y, addedWord.start.x, addedWord.direction);
+		
+		strcat(words, wordString);
+	}
+
+	words[strlen(words)-1] = '\0';
+	string wordString(words);
+	return wordString;
+}
+
 // Set dictionary wanted by user
 void Scrabble::setDictionary(string dictionaryFileName){
 	gameSettings.dictionaryFileName = dictionaryFileName;
@@ -51,7 +70,7 @@ void Scrabble::startGame(){
 		printBoard();
 
 		// Give 7 letters to each player
-		for(int i = 0; (unsigned)i < players.size(); i++){
+		for(int i = 0; (unsigned)i < gameSettings.playerNumber; i++){
 			drawLettersAndAddToHand(HAND_SIZE, i);
 		}
 
@@ -63,6 +82,7 @@ void Scrabble::startGame(){
 void Scrabble::endGame(){
 	if(hasActiveGame) {
 		hasActiveGame = false;
+		updateScoreboard();
 
 		freeBoard();
 

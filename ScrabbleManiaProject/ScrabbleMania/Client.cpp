@@ -18,6 +18,7 @@
 using namespace std;
 
 #define BUFFER_SIZE 1024
+#define BUFFER_LONG_SIZE 2048
 
 // Function declarations
 void usage(char * program);
@@ -96,20 +97,47 @@ void playGame(int connection_fd, bool *interrupted) {
 
 	scrabble.setPlayersNumber(playersNumber);
 
-	string handString;
-	// Receives hand
-	recvString(connection_fd, buffer, BUFFER_SIZE);
-
-	// Separate by char
-	vector<letterTile_t> hand;
-
-	for(int i = 0; (unsigned)i < strlen(buffer); i++){
-		hand.push_back(letterTile_t(buffer[i], scrabble.getLetterValue(buffer[i])));
-	}
-
-	player.setHand(hand);
-
 	scrabble.generateBoard();
+
+	if(playerID >= playersNumber){
+		// Spectator
+		cout << "YOU ARE ONLY A SPECTATOR!!" << endl;
+
+		// Receives words already added 
+		recvString(connection_fd, buffer, BUFFER_LONG_SIZE);
+
+		char *str = strtok(buffer, ":");
+		while(str != NULL){
+			// Word
+			char *word = new char[scrabble.getBoardSize() + 1];
+			int x;
+			int y;
+			char direction;
+			
+			sscanf(str, "%s %d %d %c", word, &x, &y, &direction);
+
+			string wordString(word);
+
+			proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
+			scrabble.addWordToGame(proposedWord);
+
+			str = strtok(NULL, ":");
+		}
+
+	}else{
+		string handString;
+		// Receives hand
+		recvString(connection_fd, buffer, BUFFER_SIZE);
+
+		// Separate by char
+		vector<letterTile_t> hand;
+
+		for(int i = 0; (unsigned)i < strlen(buffer); i++){
+			hand.push_back(letterTile_t(buffer[i], scrabble.getLetterValue(buffer[i])));
+		}
+
+		player.setHand(hand);
+	}
 
 	cout << "Game Started!" << endl;
 
