@@ -58,6 +58,9 @@ class Scrabble {
 		// Check if there are letters already in position, that they are equal to the index in word
 		bool wordFitsInBoard(proposedWord_t proposedWord, vector<char> *neededLetters);
 
+		//Checks that a word will form valid dictionary words with any neighbouring letters/words
+		bool isNeighbourFriendly(proposedWord_t proposedWord, int playerId);
+
 		//Write word onto board
 		void placeLettersOnBoard(proposedWord_t proposedWord);
 

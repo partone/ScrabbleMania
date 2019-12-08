@@ -291,7 +291,7 @@ void * clientHandler(void * arg) {
 				*playerMadeMove = true;
 				//Start the mutex here so it affects all players
 				pthread_mutex_lock(&lock);
-				pthread_cond_signal(&playerTurnOverCond); 	//Signal the other threads to continue
+				pthread_cond_broadcast(&playerTurnOverCond); 	//Signal the other threads to continue
 				cout << "Sending turn over signal" << endl;
 				//Unlock the mutex
 				pthread_mutex_unlock(&lock);
@@ -309,10 +309,10 @@ void * clientHandler(void * arg) {
 			recvString(connection_fd, buffer, BUFFER_SIZE);
 
 			// Wait until the turn player adds word to board
-			//while(!*playerMadeMove){
-			//}
 			cout << "Waiting for turn over signal" << endl;
+			pthread_mutex_lock(&lock);
 			pthread_cond_wait(&playerTurnOverCond, &lock);
+			pthread_mutex_unlock(&lock);
 			cout << "Received turn over signal" << endl;
 
 			// Check what player did

@@ -262,6 +262,13 @@ int Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 		return -1;
 	}
 
+	vector<char> neededLetters;
+	wordFitsInBoard(proposedWord, &neededLetters);		//Get the vector  of letters the player needs
+	//Remove the tiles from the player's hand
+	removeTilesFromHand(playerId, neededLetters);
+	//Add new tiles to the player's hand
+	drawLettersAndAddToHand(neededLetters.size(), playerId);
+
 	//Write word onto board
 	placeLettersOnBoard(proposedWord);
 
@@ -322,7 +329,23 @@ void Scrabble::placeLettersOnBoard(proposedWord_t proposedWord) {
  */
 bool Scrabble::isValidWord(proposedWord_t proposedWord, int playerId) {
 	cout << proposedWord.word << " is in dictionary: " << isInDictionary(proposedWord.word) << endl;
-	return isInDictionary(proposedWord.word) && canFormWord(proposedWord, playerId);
+	return isInDictionary(proposedWord.word) && canFormWord(proposedWord, playerId) && isNeighbourFriendly(proposedWord, playerId);
+}
+
+//Checks that a word will form valid dictionary words with any neighbouring letters/words
+bool Scrabble::isNeighbourFriendly(proposedWord_t proposedWord, int playerId) {
+	//Variable renaming for simplicity
+	int wordLength = proposedWord.word.length();
+	int x = proposedWord.start.x;
+	int y = proposedWord.start.y;
+	switch(proposedWord.direction) {
+		case 'd':
+			return true;
+			break;
+		case 'r':
+			return true;
+			break;
+	}
 }
 
 // Checks if a word can be formed using the existing letters on the board and the player's tiles
@@ -345,12 +368,6 @@ bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 		cout << "Error: " << players[playerId].getName() << " doesn't have the necessary letters!" << endl;
 		return false;
 	}
-
-	//Remove the tiles from the player's hand
-	removeTilesFromHand(playerId, neededLetters);
-
-	//Add new tiles to the player's hand
-	drawLettersAndAddToHand(neededLetters.size(), playerId);
 
 	return true;
 }
