@@ -206,6 +206,14 @@ void * clientHandler(void * arg) {
 			sprintf(buffer, "YOUR_TURN");
 			sendString(connection_fd, buffer, strlen(buffer)+1);
 
+			//Receive OK
+			recvString(connection_fd, buffer, BUFFER_SIZE);
+
+			//Send hand
+			sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
+			sendString(connection_fd, buffer, strlen(buffer)+1);
+
+			//Receive OK
 			recvString(connection_fd, buffer, BUFFER_SIZE);
 
 			// Check what player wants to do
@@ -250,6 +258,7 @@ void * clientHandler(void * arg) {
 
 				string wordString(word);
 				proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
+				//Add word to game and replace the players' tiles if the word is valid
 				int wordValue = scrabble->addWordToGame(proposedWord, playerID);
 				while(wordValue < 0){
 					cout << "Invalid!" << endl;
@@ -265,6 +274,7 @@ void * clientHandler(void * arg) {
 					string wordString(word);
 					proposedWord = proposedWord_t(wordString, x, y, direction);
 
+					//Add word to game and replace the players' tiles if the word is valid
 					wordValue = scrabble->addWordToGame(proposedWord, playerID);
 				}
 

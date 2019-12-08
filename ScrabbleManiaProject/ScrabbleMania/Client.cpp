@@ -124,6 +124,23 @@ void playGame(int connection_fd, bool *interrupted) {
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 
 		if(!strcmp(buffer, "YOUR_TURN")){
+
+			// Send OK
+			sprintf(buffer, "OK");
+			sendString(connection_fd, buffer, strlen(buffer)+1);
+
+			// Receive hand
+			recvString(connection_fd, buffer, BUFFER_SIZE);
+
+			// Separate by char
+			vector<letterTile_t> hand;
+
+			for(int i = 0; (unsigned)i < strlen(buffer); i++){
+				hand.push_back(letterTile_t(buffer[i], scrabble.getLetterValue(buffer[i])));
+			}
+
+			player.setHand(hand);
+
 			// Turn of current client
 			cout << "It's your turn! Your hand is: " << endl;
 			player.printHand();
