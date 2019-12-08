@@ -8,6 +8,8 @@ Eric Parton
 
 #define HAND_SIZE 7
 
+#define STRING_SIZE 100
+
 // Constructor
 Scrabble::Scrabble(){
 	hasActiveGame = false;
@@ -71,8 +73,6 @@ void Scrabble::endGame(){
 		gameSettings.dictionaryFileName = "";
 		gameSettings.playerNumber = 0;
 
-		// TODO: calculate winner, etc...
-
 	}
 }
 
@@ -81,11 +81,57 @@ string Scrabble::getPlayerName(int playerId){
 	return players[playerId].getName();
 }
 
+// Check if player is still in playing
+bool Scrabble::isPlayerStillInGame(int playerId){
+	return players[playerId].stillInGame;
+}
+
+// Player is leaving game, return his position, score and who is winning
+string Scrabble::playerIsLeaving(int playerId){
+	players[playerId].stillInGame = false;
+
+	char buffer[STRING_SIZE];
+
+	sprintf(buffer, "%d %d %s", playerPosition(playerId), players[playerId].getScore(), (char *)players[scoreBoard[0]].getName().c_str());
+
+	string playerPositionScore(buffer);
+
+	return playerPositionScore;
+
+}
+
+// Player position depending on score
+int Scrabble::playerPosition(int playerId){
+ 
+	// Find given element in vector
+	vector<int>::iterator it = std::find(scoreBoard.begin(), scoreBoard.end(), playerId);
+ 
+	return distance(scoreBoard.begin(), it);
+}
+
+// Compares two players according to score
+bool comparePlayerScore(Player i1, Player i2) { 
+    return (i1.getScore() > i2.getScore()); 
+}
+
+// Get calculate scoreBoard
+void Scrabble::updateScoreboard(){
+	scoreBoard.clear();
+	vector<Player> players_copy(players);
+	
+	sort(players_copy.begin(), players_copy.end(), comparePlayerScore);
+
+	for(int i = 0; i < players_copy.size(); i++){
+		scoreBoard.push_back(players_copy[i].getId());
+	}
+}
+
+
 // Get the number of active players
 int Scrabble::countActivePlayers(){
 	int count = 0;
 	for(int i = 0; (unsigned)i < players.size(); i++){
-		if(players[i].getPlayerType() == ACTIVE){
+		if(players[i].stillInGame){
 			count++;
 		}
 	}
@@ -190,8 +236,15 @@ void Scrabble::exchangeLetters(int playerId, vector<int> indexes){
 	int index = 0;
 	letterTile_t letterTile;
 
+	int numberOfLetters = indexes.size();
+
+	//Make sure there are enough letters to draw
+	if((unsigned)numberOfLetters > letterPool.size()) {
+		numberOfLetters = letterPool.size();
+	}
+
 	// Loop through the received indexes of tiles
-	for(int i = 0; (unsigned)i < indexes.size(); i++) {
+	for(int i = 0; (unsigned)i < numberOfLetters; i++) {
 		index = indexes[i];
 		// Get the tile
 		letterTile = hand->at(index);
@@ -264,6 +317,9 @@ int Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 
 	//Write word onto board
 	placeLettersOnBoard(proposedWord);
+
+	// Save word in vector
+	addedWords.push_back(proposedWord);
 
 	//Add points from formed word to player
 	int wordValue = getWordValue(proposedWord);
@@ -360,6 +416,11 @@ void Scrabble::removeTilesFromHand(int playerId, vector<char> neededLetters) {
 		for(int i = 0; (unsigned)i < neededLetters.size(); i++) {
 			players[playerId].removeTileFromHand(neededLetters[i]);
 		}
+}
+
+// Get letter pool size
+int Scrabble::getLetterPoolSize(){
+	return letterPool.size();
 }
 
 // Check if words fits in board

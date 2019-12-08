@@ -208,8 +208,21 @@ void * clientHandler(void * arg) {
 		// Calculate turn of player
 		turn = scrabble->getTurn() % scrabble->getSettingsPlayerNumber();
 
+		// Check if there are still minimum 2 players
+		if(scrabble->countActivePlayers() < 2){
+
+		}
+
+		while(!scrabble->isPlayerStillInGame(turn)){
+			scrabble->nextTurn();
+		}
+
+		// TODO: read when client wants to leave (with signal) and call
+		//scrabble->updateScoreboard();
+		//scrabble->playerIsLeaving(playerID);
 
 		if(turn == playerID) {
+			*playerMadeMove = false;
 			cout << "Turn of " << turn << endl;
 			// turn of this thread player
 			sprintf(buffer, "YOUR_TURN");
@@ -252,14 +265,7 @@ void * clientHandler(void * arg) {
 				sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
 				sendString(connection_fd, buffer, strlen(buffer)+1);
 
-				*playerMadeMove = true;
 				*gameHasNewWord = false;
-				//Start the mutex here so it affects all players
-				pthread_mutex_lock(lock);
-				pthread_cond_signal(playerTurnOverCond); 	//Signal the other threads to continue
-				cout << "Sending turn over signal" << endl;
-				//Unlock the mutex
-				pthread_mutex_unlock(lock);
 			}else{
 				char *word = new char[scrabble->getBoardSize() + 1];
 				int x;
@@ -302,15 +308,23 @@ void * clientHandler(void * arg) {
 
 				*addedWord = proposedWord;
 				*gameHasNewWord = true;
-				*playerMadeMove = true;
-				//Start the mutex here so it affects all players
-				pthread_mutex_lock(lock);
-				pthread_cond_signal(playerTurnOverCond); 	//Signal the other threads to continue
-				cout << "Sending turn over signal" << endl;
-				//Unlock the mutex
-				pthread_mutex_unlock(lock);
+
+				// Check if game has ended
+				if(scrabble->getHand(playerID) == ""){
+					// Means that the player has used all its tiles and the letterpool is empty
+					scrabble->updateScoreboard();
+					scrabble->endGame();
+				}
 			}
 
+			//Start the mutex here so it affects all players
+			pthread_mutex_lock(lock);
+			pthread_cond_signal(playerTurnOverCond); 	//Signal the other threads to continue
+			cout << "Sending turn over signal" << endl;
+			//Unlock the mutex
+			pthread_mutex_unlock(lock);
+			
+			*playerMadeMove = true;
 			// Next turn in game
 			scrabble->nextTurn();
 
@@ -342,17 +356,30 @@ void * clientHandler(void * arg) {
 
 		}
 
-
-		*playerMadeMove = false;
-
 		// Receives OK
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 
 	}
 
+	// Game ended
+	sprintf(buffer, "GAME_ENDED");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+
+	// Receives OK
+	recvString(connection_fd, buffer, BUFFER_SIZE);
+
+	// Send score, position and who won
+	sprintf(buffer, "%s", (char *)scrabble->playerIsLeaving(playerID).c_str());
+	sendString(connection_fd, buffer, strlen(buffer)+1);
 
 	// Free arg memory
 	free(ctd);
 
 	pthread_exit(NULL);
 }
+
+// TODO: read ctrl+c signal in server and let the clients know, return their score and position
+//scrabble->updateScoreboard();
+//scrabble->endGame();
+// for(int i = 0; i < players.size(); i++)
+		//scrabble->playerIsLeaving(i);

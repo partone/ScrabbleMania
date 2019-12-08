@@ -28,6 +28,8 @@ private:
 	int score;
 	player_type_t playerType;
 public:
+	bool stillInGame;
+
 	Player(int _id);
 	Player(int _id, string _name = "", player_type_t _playerType = ACTIVE);
 

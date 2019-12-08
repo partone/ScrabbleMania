@@ -169,8 +169,33 @@ void playGame(int connection_fd, bool *interrupted) {
 			// Send OK
 			sprintf(buffer, "OK");
 			sendString(connection_fd, buffer, strlen(buffer)+1);
+		}else if(!strcmp(buffer, "GAME_ENDED")){
+			// Game ended
+			sprintf(buffer, "OK");
+			sendString(connection_fd, buffer, strlen(buffer)+1);
+
+			// Receives positon and score
+			int position = 0;
+			int score = 0;
+			char winningPlayer[BUFFER_SIZE];
+			
+			recvString(connection_fd, buffer, BUFFER_SIZE);
+			sscanf(buffer, "%d %d %s", &position, &score, winningPlayer);
+
+			cout << "The game has ended!" << endl;
+
+			if(position == 0){
+				cout << "Congratulations!!!" << endl;
+				cout << "You were the first place with a score of " << score << " points!" << endl;
+			}else{
+				cout << winningPlayer << " won!" << endl;
+				cout << "You ended at position " << position+1 << " with a score of " << score << " points!" << endl;
+			}
+
+			cout << "Thank you for playing with us!" << endl;
 
 		}else{
+			// Received player's turn name
 			string playersNameTurn(buffer);
 
 			sprintf(buffer, "OK");

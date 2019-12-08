@@ -10,6 +10,7 @@ Player::Player(int _id){
   name = "";
   score = 0;
 	playerType = ACTIVE;
+	stillInGame = true;
 }
 
 Player::Player(int _id, string _name, player_type_t _playerType){
@@ -17,6 +18,7 @@ Player::Player(int _id, string _name, player_type_t _playerType){
   name = _name;
   score = 0;
 	playerType = _playerType;
+	stillInGame = true;
 }
 void Player::setName(string _name){
   name = _name;
