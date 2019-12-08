@@ -24,14 +24,9 @@ Eric Parton
 #define BUFFER_SIZE 1024
 
 // Function declarations
-void waitForConnections(int server_fd, Scrabble *scrabble, bool *playerMadeMove, bool *gameHasNewWord, proposedWord_t *addedWord);
+void waitForConnections(int server_fd, Scrabble *scrabble);
 void * clientHandler(void * arg);
 void usage(char * program);
-
-//Declaration of thread condition variable			//TODO: Make this local
-pthread_cond_t playerTurnOverCond = PTHREAD_COND_INITIALIZER;
-//Mutex for the player turn
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 //The struct to be sent to the thread
 typedef struct clientThreadDataStruct {
@@ -41,6 +36,11 @@ typedef struct clientThreadDataStruct {
 	bool * gameHasNewWord;
 	proposedWord_t * addedWord;
 
+	// Concurrency
+	//Declaration of thread condition variable
+	pthread_cond_t * playerTurnOverCond;
+	//Mutex for the player turn
+	pthread_mutex_t * lock;
 
 	int connection_fd;
 } clientThreadData;
@@ -58,17 +58,12 @@ int main(int argc, char * argv[]) {
 	// TODO: ask this to the first player
 	scrabble.setDictionary("dictionaries/english.txt");
 
-	// Set up variables for thread data
-	bool playerMadeMove = false;
-	bool gameHasNewWord = false;
-	proposedWord_t addedWord;
-
 	//Set up the sever
 	int server_fd;
 	server_fd = initServer(argv[1], MAX_CLIENTS);
 
 	// Listen for connections from the clients
-	waitForConnections(server_fd, &scrabble, &playerMadeMove, &gameHasNewWord, &addedWord);
+	waitForConnections(server_fd, &scrabble);
 
 	return 1;
 }
@@ -82,40 +77,50 @@ void usage(char * program)
 
 
 //Server is running, waiting for player to start game
-void waitForConnections(int server_fd, Scrabble *scrabble, bool *playerMadeMove, bool *gameHasNewWord, proposedWord_t *addedWord)
+void waitForConnections(int server_fd, Scrabble *scrabble)
 {
-    struct sockaddr_in client_address;
-    socklen_t client_address_size;
-    char client_presentation[INET_ADDRSTRLEN];
-    int client_fd;
-    pthread_t new_tid;
-		clientThreadData * ctd = NULL;		//For the data sent to the thread
 
-		//Allow each player to connect to the game
-    while(1){
-      // Get the size of the structure to store client information
-      client_address_size = sizeof client_address;
-      while(1) {
-				// Wait for a client connection
-				client_fd = accept(server_fd, (struct sockaddr *)&client_address, &client_address_size);
-				// Get the data from the client
-				inet_ntop(client_address.sin_family, &client_address.sin_addr, client_presentation, sizeof client_presentation);
-				printf("Received incoming connection from %s on port %d\n", client_presentation, client_address.sin_port);
-				break;
-			}
-			//Prepare the client struct
-			ctd = (clientThreadData *)malloc(sizeof(clientThreadData));
-			ctd->scrabble = scrabble;
-			ctd->playerMadeMove = playerMadeMove;
-			ctd->gameHasNewWord = gameHasNewWord;
-			ctd->addedWord = addedWord;
-			ctd->connection_fd = client_fd;
+	// Set up variables for thread data
+	bool playerMadeMove = false;
+	bool gameHasNewWord = false;
+	proposedWord_t addedWord;
+	pthread_cond_t playerTurnOverCond = PTHREAD_COND_INITIALIZER;
+	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+	
+	struct sockaddr_in client_address;
+	socklen_t client_address_size;
+	char client_presentation[INET_ADDRSTRLEN];
+	int client_fd;
+	pthread_t new_tid;
+	clientThreadData * ctd = NULL;		//For the data sent to the thread
 
-			//Create the thread
-			pthread_create(&new_tid, NULL, clientHandler, ctd);
+	//Allow each player to connect to the game
+	while(1){
+		// Get the size of the structure to store client information
+		client_address_size = sizeof client_address;
+		while(1) {
+			// Wait for a client connection
+			client_fd = accept(server_fd, (struct sockaddr *)&client_address, &client_address_size);
+			// Get the data from the client
+			inet_ntop(client_address.sin_family, &client_address.sin_addr, client_presentation, sizeof client_presentation);
+			printf("Received incoming connection from %s on port %d\n", client_presentation, client_address.sin_port);
+			break;
 		}
+		//Prepare the client struct
+		ctd = (clientThreadData *)malloc(sizeof(clientThreadData));
+		ctd->scrabble = scrabble;
+		ctd->playerMadeMove = &playerMadeMove;
+		ctd->gameHasNewWord = &gameHasNewWord;
+		ctd->addedWord = &addedWord;
+		ctd->playerTurnOverCond = &playerTurnOverCond;
+		ctd->lock = &lock;
+		ctd->connection_fd = client_fd;
 
-    return;
+		//Create the thread
+		pthread_create(&new_tid, NULL, clientHandler, ctd);
+	}
+
+	return;
 }
 
 //The function each thread will attend clients on
@@ -126,6 +131,8 @@ void * clientHandler(void * arg) {
 	bool * gameHasNewWord;
 	bool * playerMadeMove;
 	proposedWord_t * addedWord;
+	pthread_cond_t * playerTurnOverCond;
+	pthread_mutex_t * lock;
 	int connection_fd;
 	int playerID;
 
@@ -135,6 +142,8 @@ void * clientHandler(void * arg) {
 	playerMadeMove = ctd->playerMadeMove;
 	gameHasNewWord = ctd->gameHasNewWord;
 	addedWord = ctd->addedWord;
+	playerTurnOverCond = ctd->playerTurnOverCond;
+	lock = ctd->lock;
 	connection_fd = ctd->connection_fd;
 
 	//Let the client know they have their own thread
@@ -245,7 +254,12 @@ void * clientHandler(void * arg) {
 
 				*playerMadeMove = true;
 				*gameHasNewWord = false;
-
+				//Start the mutex here so it affects all players
+				pthread_mutex_lock(lock);
+				pthread_cond_signal(playerTurnOverCond); 	//Signal the other threads to continue
+				cout << "Sending turn over signal" << endl;
+				//Unlock the mutex
+				pthread_mutex_unlock(lock);
 			}else{
 				char *word = new char[scrabble->getBoardSize() + 1];
 				int x;
@@ -290,11 +304,11 @@ void * clientHandler(void * arg) {
 				*gameHasNewWord = true;
 				*playerMadeMove = true;
 				//Start the mutex here so it affects all players
-				pthread_mutex_lock(&lock);
-				pthread_cond_signal(&playerTurnOverCond); 	//Signal the other threads to continue
+				pthread_mutex_lock(lock);
+				pthread_cond_signal(playerTurnOverCond); 	//Signal the other threads to continue
 				cout << "Sending turn over signal" << endl;
 				//Unlock the mutex
-				pthread_mutex_unlock(&lock);
+				pthread_mutex_unlock(lock);
 			}
 
 			// Next turn in game
@@ -312,7 +326,7 @@ void * clientHandler(void * arg) {
 			//while(!*playerMadeMove){
 			//}
 			cout << "Waiting for turn over signal" << endl;
-			pthread_cond_wait(&playerTurnOverCond, &lock);
+			pthread_cond_wait(playerTurnOverCond, lock);
 			cout << "Received turn over signal" << endl;
 
 			// Check what player did
