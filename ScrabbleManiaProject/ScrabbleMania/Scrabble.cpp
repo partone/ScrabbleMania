@@ -348,10 +348,12 @@ bool Scrabble::canFormWord(proposedWord_t proposedWord, int playerId) {
 
 	//Remove the tiles from the player's hand
 	removeTilesFromHand(playerId, neededLetters);
+	cout << "The player played " << neededLetters.size() << " tiles" << endl;
 
 	//Add new tiles to the player's hand
-	int numberOfFreshLettersNeeded = HAND_SIZE - neededLetters.size();
-	drawLettersAndAddToHand(numberOfFreshLettersNeeded, playerId);
+	drawLettersAndAddToHand(neededLetters.size(), playerId);
+
+	cout << "The player drew " << numberOfFreshLettersNeeded << " new tiles" << endl;
 
 	return true;
 }

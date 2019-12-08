@@ -27,6 +27,8 @@ string Player::getName(){
 
 void Player::addTileToHand(letterTile_t tile){
   hand.push_back(tile);
+  printHand();
+  return;
 }
 
 //Remove a single tile from the player based on its letter
@@ -34,6 +36,8 @@ void Player::removeTileFromHand(char letter) {
   for(int i = 0; (unsigned)i < hand.size(); i++) {
     if(hand[i].letter == letter) {
       hand.erase(hand.begin() + i);
+      cout << "Removed " << letter << "from hand" << endl;
+      printHand();
       return;
     }
   }
