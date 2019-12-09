@@ -1,12 +1,5 @@
-/*
-   Eric Parton
-   Luis Barajas
-
-    For trimming strings
-    Code from https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
-*/
-
-
+//For trimming strings
+//Code from https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
 
 #include <string>
 const std::string whiteSpaces( " \f\n\r\t\v" );

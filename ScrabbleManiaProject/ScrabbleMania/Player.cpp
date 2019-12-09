@@ -5,35 +5,26 @@ Eric Parton
 
 #include "Player.h"
 
-// Constructor
 Player::Player(int _id){
   id = _id;
   name = "";
   score = 0;
 	playerType = ACTIVE;
-	stillInGame = true;
 }
 
-// Constructor
 Player::Player(int _id, string _name, player_type_t _playerType){
   id = _id;
   name = _name;
   score = 0;
 	playerType = _playerType;
-	stillInGame = true;
 }
-
-// Set name
 void Player::setName(string _name){
   name = _name;
 }
-
-// Get name
 string Player::getName(){
   return name;
 }
 
-// Add specific tile to player's hand
 void Player::addTileToHand(letterTile_t tile){
   hand.push_back(tile);
   printHand();
@@ -54,43 +45,37 @@ void Player::removeTileFromHand(char letter) {
   return;
 }
 
-// Get reference to player's hand
+
 vector<letterTile_t> * Player::getHand(){
   return &hand;
 }
-// Set hand of the player (testing only)
+
 void Player::setHand(vector<letterTile_t> newHand) {
 	hand = newHand;
 }
 
-// Set score
 void Player::setScore(int _score) {
 	score = _score;
 }
 
-// Get score
 int Player::getScore() {
 	return score;
 }
 
-// Set type of the player
 void Player::setPlayerType(player_type_t _playerType){
 	playerType = _playerType;
 }
 
-// Get type of the player
 player_type_t Player::getPlayerType(){
 	return playerType;
 }
 
-// Get player's id
 int Player::getId() {
 	return id;
 }
 
 //Prints a set of scrabble tiles
 void Player::printHand() {
-	// Loop though hand's tiles
 	for (int i = 0; (unsigned)i < hand.size(); i++) {
 		cout << hand.at(i).letter << " " << hand.at(i).value;
 		if ((unsigned)i != hand.size() - 1) {

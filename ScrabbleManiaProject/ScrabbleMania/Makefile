@@ -1,6 +1,3 @@
-# Luis Barajas
-# Eric Parton
-
 # Simple example of a Makefile
 
 ### Variables for this project ###
