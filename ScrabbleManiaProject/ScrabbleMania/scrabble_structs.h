@@ -73,7 +73,6 @@ typedef struct proposed_word_struct {
 typedef struct game_settings_struct {
 	string dictionaryFileName;
 	int playerNumber;
-	// TODO: add settings that the user can set
 
 	game_settings_struct(){
 		dictionaryFileName = "";

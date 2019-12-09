@@ -24,7 +24,9 @@ class Scrabble {
 		std::set<string> dictionary;
 		board_t *board;
 		vector<letterTile_t> letterPool;
+		vector<proposedWord_t> addedWords;
 		vector<Player> players;
+		vector<int> scoreBoard;
 		gameSettings_t gameSettings;
 
 		// Variable for knowing whose turn it is
@@ -38,6 +40,9 @@ class Scrabble {
 
 		// Fill dictionary with the settings from the user
 		void fillDictionary();
+
+		// Compares two players according to score
+		// bool comparePlayerScore(Player i1, Player i2);
 
 		/*
 		* Checks if a word can be formed:
@@ -81,6 +86,9 @@ class Scrabble {
 		// New player wants to connect to game
 		int addPlayerToGame(string name);
 
+		// Get added words as string
+		string getAddedWords();
+
 		// Set dictionary wanted by user
 		void setDictionary(string dictionaryFileName);
 
@@ -94,6 +102,18 @@ class Scrabble {
 
 		// Get the name of the player
 		string getPlayerName(int playerId);
+
+		// Check if player is still in playing
+		bool isPlayerStillInGame(int playerId);
+
+		// Player is leaving game, return his position and score
+		string playerIsLeaving(int playerId);
+
+		// Player position depending on score
+		int playerPosition(int playerId);
+
+		// Get calculate scoreboard
+		void updateScoreboard();
 
 		// Get the number of active players
 		int countActivePlayers();
@@ -157,6 +177,9 @@ class Scrabble {
 
 		//Remove tile from a player's hand
 		void removeTilesFromHand(int playerId, vector<char> neededLetters);
+
+		// Get letter pool size
+		int getLetterPoolSize();
 };
 
 
