@@ -1,10 +1,4 @@
-/*
-   Eric Parton
-   Luis Barajas
-   
-   For trimming strings
-    Code from https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
-*/
+
 #include "trim.h"
 
 void trimRight( std::string& str, const std::string& trimChars)

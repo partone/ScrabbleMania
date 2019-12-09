@@ -22,12 +22,16 @@ Eric Parton
 #define HAND_SIZE 7
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 1024
-#define BUFFER_LONG_SIZE 2048
 
 // Function declarations
-void waitForConnections(int server_fd, Scrabble *scrabble);
+void waitForConnections(int server_fd, Scrabble *scrabble, bool *playerMadeMove, bool *gameHasNewWord, proposedWord_t *addedWord);
 void * clientHandler(void * arg);
 void usage(char * program);
+
+//Declaration of thread condition variable			//TODO: Make this local
+pthread_cond_t playerTurnOverCond = PTHREAD_COND_INITIALIZER;
+//Mutex for the player turn
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 //The struct to be sent to the thread
 typedef struct clientThreadDataStruct {
@@ -37,11 +41,6 @@ typedef struct clientThreadDataStruct {
 	bool * gameHasNewWord;
 	proposedWord_t * addedWord;
 
-	// Concurrency
-	//Declaration of thread condition variable
-	pthread_cond_t * playerTurnOverCond;
-	//Mutex for the player turn
-	pthread_mutex_t * lock;
 
 	int connection_fd;
 } clientThreadData;
@@ -56,15 +55,20 @@ int main(int argc, char * argv[]) {
 	srand(time(0));			//Initialise seed for random stuff
 	Scrabble scrabble = Scrabble();
 
-	// Set the dictionary
+	// TODO: ask this to the first player
 	scrabble.setDictionary("dictionaries/english.txt");
+
+	// Set up variables for thread data
+	bool playerMadeMove = false;
+	bool gameHasNewWord = false;
+	proposedWord_t addedWord;
 
 	//Set up the sever
 	int server_fd;
 	server_fd = initServer(argv[1], MAX_CLIENTS);
 
 	// Listen for connections from the clients
-	waitForConnections(server_fd, &scrabble);
+	waitForConnections(server_fd, &scrabble, &playerMadeMove, &gameHasNewWord, &addedWord);
 
 	return 1;
 }
@@ -78,64 +82,50 @@ void usage(char * program)
 
 
 //Server is running, waiting for player to start game
-void waitForConnections(int server_fd, Scrabble *scrabble)
+void waitForConnections(int server_fd, Scrabble *scrabble, bool *playerMadeMove, bool *gameHasNewWord, proposedWord_t *addedWord)
 {
+    struct sockaddr_in client_address;
+    socklen_t client_address_size;
+    char client_presentation[INET_ADDRSTRLEN];
+    int client_fd;
+    pthread_t new_tid;
+		clientThreadData * ctd = NULL;		//For the data sent to the thread
 
-	// Set up variables for thread data
-	bool playerMadeMove = false;
-	bool gameHasNewWord = false;
-	proposedWord_t addedWord;
-	pthread_cond_t playerTurnOverCond = PTHREAD_COND_INITIALIZER;
-	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-	// Set up variables for sockets communication
-	struct sockaddr_in client_address;
-	socklen_t client_address_size;
-	char client_presentation[INET_ADDRSTRLEN];
-	int client_fd;
-	pthread_t new_tid;
-	clientThreadData * ctd = NULL;		//For the data sent to the thread
+		//Allow each player to connect to the game
+    while(1){
+      // Get the size of the structure to store client information
+      client_address_size = sizeof client_address;
+      while(1) {
+				// Wait for a client connection
+				client_fd = accept(server_fd, (struct sockaddr *)&client_address, &client_address_size);
+				// Get the data from the client
+				inet_ntop(client_address.sin_family, &client_address.sin_addr, client_presentation, sizeof client_presentation);
+				printf("Received incoming connection from %s on port %d\n", client_presentation, client_address.sin_port);
+				break;
+			}
+			//Prepare the client struct
+			ctd = (clientThreadData *)malloc(sizeof(clientThreadData));
+			ctd->scrabble = scrabble;
+			ctd->playerMadeMove = playerMadeMove;
+			ctd->gameHasNewWord = gameHasNewWord;
+			ctd->addedWord = addedWord;
+			ctd->connection_fd = client_fd;
 
-	//Allow each player to connect to the game
-	while(1){
-		// Get the size of the structure to store client information
-		client_address_size = sizeof client_address;
-		while(1) {
-			// Wait for a client connection
-			client_fd = accept(server_fd, (struct sockaddr *)&client_address, &client_address_size);
-			// Get the data from the client
-			inet_ntop(client_address.sin_family, &client_address.sin_addr, client_presentation, sizeof client_presentation);
-			printf("Received incoming connection from %s on port %d\n", client_presentation, client_address.sin_port);
-			break;
+			//Create the thread
+			pthread_create(&new_tid, NULL, clientHandler, ctd);
 		}
-		//Prepare the client struct
-		ctd = (clientThreadData *)malloc(sizeof(clientThreadData));
-		ctd->scrabble = scrabble;
-		ctd->playerMadeMove = &playerMadeMove;
-		ctd->gameHasNewWord = &gameHasNewWord;
-		ctd->addedWord = &addedWord;
-		ctd->playerTurnOverCond = &playerTurnOverCond;
-		ctd->lock = &lock;
-		ctd->connection_fd = client_fd;
 
-		//Create the thread
-		pthread_create(&new_tid, NULL, clientHandler, ctd);
-	}
-
-	return;
+    return;
 }
 
 //The function each thread will attend clients on
 void * clientHandler(void * arg) {
-	// Set up variables for this thread
 	cout << "Thread created\n";
 	char buffer[BUFFER_SIZE];
-	char bufferLong[BUFFER_LONG_SIZE];
 	Scrabble * scrabble;
 	bool * gameHasNewWord;
 	bool * playerMadeMove;
 	proposedWord_t * addedWord;
-	pthread_cond_t * playerTurnOverCond;
-	pthread_mutex_t * lock;
 	int connection_fd;
 	int playerID;
 
@@ -145,8 +135,6 @@ void * clientHandler(void * arg) {
 	playerMadeMove = ctd->playerMadeMove;
 	gameHasNewWord = ctd->gameHasNewWord;
 	addedWord = ctd->addedWord;
-	playerTurnOverCond = ctd->playerTurnOverCond;
-	lock = ctd->lock;
 	connection_fd = ctd->connection_fd;
 
 	//Let the client know they have their own thread
@@ -160,14 +148,15 @@ void * clientHandler(void * arg) {
 
 	//Get the player ID for turn management later on
 	playerID = scrabble->addPlayerToGame(buffer);
-	int playerNumber = 0;
 
 	// Ask client for number of players, if it is the first to connect
 	if(playerID == 0){
 		// It is the first client to connect
 		sprintf(buffer, "SEND_PLAYER_NUMBER");
 		sendString(connection_fd, buffer, strlen(buffer)+1);
-		// Receive player number
+
+		int playerNumber = 0;
+
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 		sscanf(buffer, "%d", &playerNumber);
 		scrabble->setSettingsPlayerNumber(playerNumber);
@@ -178,20 +167,19 @@ void * clientHandler(void * arg) {
 		// Wait for the first player to set gameSettings.playerNumber
 		while (scrabble->getSettingsPlayerNumber() == 0){ }
 
-		playerNumber = scrabble->getSettingsPlayerNumber();
-		// Send player Number and playerID
-		sprintf(buffer, "%d %d", playerNumber, playerID);
+		sprintf(buffer, "%d %d", scrabble->getSettingsPlayerNumber(), playerID);
 		sendString(connection_fd, buffer, strlen(buffer)+1);
 		// Receives OK
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 
-		// Check if is the last necessary palyer to start game
-		if (playerID == playerNumber - 1) {
+		if (playerID == scrabble->getSettingsPlayerNumber() - 1) {
 			scrabble->startGame();
 			cout << "Game started" << endl;
 		}
 
 	}
+
+	// TODO: if spectator joins after game has words, send the words to it
 
 	int turn = 0;
 
@@ -199,18 +187,9 @@ void * clientHandler(void * arg) {
 	while(!scrabble->hasActiveGame){
 	}
 
-	// Check if it's spectator
-	if (playerID >= playerNumber){
-		// Spectator
-		// Send words already in board
-		sprintf(bufferLong, "%s", (char *)scrabble->getAddedWords().c_str());
-		sendString(connection_fd, bufferLong, strlen(bufferLong)+1);
-	}else{
-		// Active player
-		// Send hand
-		sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
-		sendString(connection_fd, buffer, strlen(buffer)+1);
-	}
+	// Send hand
+	sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
+	sendString(connection_fd, buffer, strlen(buffer)+1);
 
 	// Receives OK
 	recvString(connection_fd, buffer, BUFFER_SIZE);
@@ -220,21 +199,8 @@ void * clientHandler(void * arg) {
 		// Calculate turn of player
 		turn = scrabble->getTurn() % scrabble->getSettingsPlayerNumber();
 
-		// Check if there are still minimum 2 players
-		if(scrabble->countActivePlayers() < 2){
-			scrabble->endGame();
-		}
-
-		while(!scrabble->isPlayerStillInGame(turn)){
-			scrabble->nextTurn();
-		}
-
-		// TODO: read when client wants to leave (with signal) and call
-		//scrabble->updateScoreboard();
-		//scrabble->playerIsLeaving(playerID);
 
 		if(turn == playerID) {
-			*playerMadeMove = false;
 			cout << "Turn of " << turn << endl;
 			// turn of this thread player
 			sprintf(buffer, "YOUR_TURN");
@@ -277,7 +243,9 @@ void * clientHandler(void * arg) {
 				sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
 				sendString(connection_fd, buffer, strlen(buffer)+1);
 
+				*playerMadeMove = true;
 				*gameHasNewWord = false;
+
 			}else{
 				char *word = new char[scrabble->getBoardSize() + 1];
 				int x;
@@ -320,7 +288,6 @@ void * clientHandler(void * arg) {
 
 				*addedWord = proposedWord;
 				*gameHasNewWord = true;
-<<<<<<< HEAD
 				*playerMadeMove = true;
 				//Start the mutex here so it affects all players
 				pthread_mutex_lock(&lock);
@@ -328,24 +295,8 @@ void * clientHandler(void * arg) {
 				cout << "Sending turn over signal" << endl;
 				//Unlock the mutex
 				pthread_mutex_unlock(&lock);
-=======
-
-				// Check if game has ended
-				if(scrabble->getHand(playerID) == ""){
-					// Means that the player has used all its tiles and the letterpool is empty
-					scrabble->endGame();
-				}
->>>>>>> c320994e05df4cb4c183630e889cf7f465f0236d
 			}
 
-			//Start the mutex here so it affects all players
-			pthread_mutex_lock(lock);
-			pthread_cond_signal(playerTurnOverCond); 	//Signal the other threads to continue
-			cout << "Sending turn over signal" << endl;
-			//Unlock the mutex
-			pthread_mutex_unlock(lock);
-			
-			*playerMadeMove = true;
 			// Next turn in game
 			scrabble->nextTurn();
 
@@ -359,13 +310,9 @@ void * clientHandler(void * arg) {
 
 			// Wait until the turn player adds word to board
 			cout << "Waiting for turn over signal" << endl;
-<<<<<<< HEAD
 			pthread_mutex_lock(&lock);
 			pthread_cond_wait(&playerTurnOverCond, &lock);
 			pthread_mutex_unlock(&lock);
-=======
-			pthread_cond_wait(playerTurnOverCond, lock);
->>>>>>> c320994e05df4cb4c183630e889cf7f465f0236d
 			cout << "Received turn over signal" << endl;
 
 			// Check what player did
@@ -381,29 +328,17 @@ void * clientHandler(void * arg) {
 
 		}
 
+
+		*playerMadeMove = false;
+
 		// Receives OK
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 
 	}
 
-	// Game ended
-	sprintf(buffer, "GAME_ENDED");
-	sendString(connection_fd, buffer, strlen(buffer)+1);
-
-	// Receives OK
-	recvString(connection_fd, buffer, BUFFER_SIZE);
-
-	// Send score, position and who won
-	sprintf(buffer, "%s", (char *)scrabble->playerIsLeaving(playerID).c_str());
-	sendString(connection_fd, buffer, strlen(buffer)+1);
 
 	// Free arg memory
 	free(ctd);
 
 	pthread_exit(NULL);
 }
-
-// TODO: read ctrl+c signal in server and let the clients know, return their score and position
-//scrabble->endGame();
-// for(int i = 0; i < players.size(); i++)
-		//scrabble->playerIsLeaving(i);
