@@ -4,6 +4,7 @@ Eric Parton
 */
 
 #include <string>
+#include <string.h>
 #include <vector>
 #include <algorithm>
 #include <ctime>
@@ -26,6 +27,8 @@ class Scrabble {
 		vector<letterTile_t> letterPool;
 		vector<Player> players;
 		gameSettings_t gameSettings;
+		vector<proposedWord_t> addedWords;
+		vector<int> scoreBoard;
 
 		// Variable for knowing whose turn it is
 		int turn;
@@ -157,6 +160,24 @@ class Scrabble {
 
 		//Remove tile from a player's hand
 		void removeTilesFromHand(int playerId, vector<char> neededLetters);
+
+		// Check if player is still in playing
+		bool isPlayerStillInGame(int playerId);
+
+		// Player is leaving game, return his position and score
+		string playerIsLeaving(int playerId);
+
+		// Player position depending on score
+		int playerPosition(int playerId);
+
+		// Get calculate scoreboard
+		void updateScoreboard();
+
+		// Get letter pool size
+		int getLetterPoolSize();
+
+		// Get added words as string
+		string getAddedWords();
 };
 
 

@@ -188,7 +188,7 @@ void * clientHandler(void * arg) {
 			playerTurn(buffer, ctd, &playerID);
 
 		}else{
-			
+
 			spectating(buffer, ctd, &turn);
 
 		}
@@ -252,7 +252,7 @@ void initializeClient(int connection_fd, char* buffer, char* bufferLong, Scrabbl
 		// Receives OK
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 
-		// Check if is the last necessary palyer to start game
+		// Check if is the last necessary player to start game
 		if (*playerID == *playerNumber - 1) {
 			scrabble->startGame();
 			cout << "Game started" << endl;
@@ -304,12 +304,12 @@ void playerTurn(char *buffer, clientThreadData_t *ctd, int *playerID){
 
 	// Check what player wants to do
 	if(!strcmp(buffer, "CHANGE")){
-		
+
 		exchangeTiles(connection_fd, buffer, scrabble, playerID);
 
 		*gameHasNewWord = false;
 	}else{
-		
+
 		addWord(connection_fd, buffer, scrabble, addedWord, playerID);
 
 		*gameHasNewWord = true;
@@ -327,7 +327,7 @@ void playerTurn(char *buffer, clientThreadData_t *ctd, int *playerID){
 	cout << "Sending turn over signal" << endl;
 	//Unlock the mutex
 	pthread_mutex_unlock(lock);
-	
+
 	*playerMadeMove = true;
 	// Next turn in game
 	scrabble->nextTurn();

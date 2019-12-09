@@ -10,6 +10,7 @@ Player::Player(int _id){
   name = "";
   score = 0;
 	playerType = ACTIVE;
+  stillInGame = true;
 }
 
 Player::Player(int _id, string _name, player_type_t _playerType){

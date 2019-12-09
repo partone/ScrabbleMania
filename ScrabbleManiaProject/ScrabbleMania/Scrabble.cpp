@@ -7,6 +7,8 @@ Eric Parton
 #include "trim.h"
 
 #define HAND_SIZE 7
+#define STRING_SIZE 100
+#define BUFFER_SIZE 2048
 
 // Constructor
 Scrabble::Scrabble(){
@@ -49,7 +51,7 @@ void Scrabble::startGame(){
 		printBoard();
 
 		// Give 7 letters to each player
-		for(int i = 0; (unsigned)i < players.size(); i++){
+		for(int i = 0; i < gameSettings.playerNumber; i++){
 			drawLettersAndAddToHand(HAND_SIZE, i);
 		}
 
@@ -61,7 +63,7 @@ void Scrabble::startGame(){
 void Scrabble::endGame(){
 	if(hasActiveGame) {
 		hasActiveGame = false;
-
+		updateScoreboard();
 		freeBoard();
 
 		// Rest turn
@@ -70,8 +72,6 @@ void Scrabble::endGame(){
 		// Reset gameSettings
 		gameSettings.dictionaryFileName = "";
 		gameSettings.playerNumber = 0;
-
-		// TODO: calculate winner, etc...
 
 	}
 }
@@ -85,7 +85,7 @@ string Scrabble::getPlayerName(int playerId){
 int Scrabble::countActivePlayers(){
 	int count = 0;
 	for(int i = 0; (unsigned)i < players.size(); i++){
-		if(players[i].getPlayerType() == ACTIVE){
+		if(players[i].stillInGame){
 			count++;
 		}
 	}
@@ -103,6 +103,7 @@ string Scrabble::getHand(int playerId){
 
 	vector<letterTile_t> *hand = players[playerId].getHand();
 	for (int i = 0; (unsigned)i < hand->size(); i++) {
+		// Append letter of tile to string
 		handString += hand->at(i).letter;
 	}
 
@@ -122,8 +123,8 @@ void Scrabble::fillDictionary(){
 	if (file.is_open()) {
 	while ( getline (file,line) ) {
 		// Save it in a the dictionary data structure
-			trim(line);
-			dictionary.insert(line);
+		trim(line);
+		dictionary.insert(line);
 	}
 	file.close();
 	}
@@ -190,8 +191,15 @@ void Scrabble::exchangeLetters(int playerId, vector<int> indexes){
 	int index = 0;
 	letterTile_t letterTile;
 
+	int numberOfLetters = indexes.size();
+
+	//Make sure there are enough letters to draw
+	if((unsigned)numberOfLetters > letterPool.size()) {
+		numberOfLetters = letterPool.size();
+	}
+
 	// Loop through the received indexes of tiles
-	for(int i = 0; (unsigned)i < indexes.size(); i++) {
+	for(int i = 0; i < numberOfLetters; i++) {
 		index = indexes[i];
 		// Get the tile
 		letterTile = hand->at(index);
@@ -272,6 +280,8 @@ int Scrabble::addWordToGame(proposedWord_t proposedWord, int playerId) {
 	//Write word onto board
 	placeLettersOnBoard(proposedWord);
 
+	addedWords.push_back(proposedWord);
+
 	//Add points from formed word to player
 	int wordValue = getWordValue(proposedWord);
 	cout << proposedWord.word << " scores " << wordValue << endl;
@@ -300,15 +310,15 @@ void Scrabble::placeLettersOnBoard(proposedWord_t proposedWord) {
 		setBoardPosValue(x, y, word[i]);
 		//Move to the next index
 		switch (direction) {
-		case 'u':
+		/*case 'u':
 			y--;
-			break;
+			break;*/
 		case 'd':
 			y++;
 			break;
-		case 'l':
+		/*case 'l':
 			x--;
-			break;
+			break;*/
 		case 'r':
 			x++;
 			break;
@@ -338,14 +348,111 @@ bool Scrabble::isNeighbourFriendly(proposedWord_t proposedWord, int playerId) {
 	int wordLength = proposedWord.word.length();
 	int x = proposedWord.start.x;
 	int y = proposedWord.start.y;
-	switch(proposedWord.direction) {
-		case 'd':
-			return true;
-			break;
-		case 'r':
-			return true;
-			break;
+
+	//For checking neighbour words
+	int higher;
+	int lower;
+	char higherChar;
+	char lowerChar;
+	bool higherStop;
+	bool lowerStop;
+
+	string neighbourWord = "";
+
+	//For each letter of the proposed word
+	for(int i = 0; i < wordLength; i++) {
+		//Check if the neighbouring words are valid
+		higher = 1;
+		lower = 1;
+		higherStop = 0;
+		lowerStop = 0;
+
+		switch(proposedWord.direction) {
+			//If the word goes down, check the validty of the words to the left and right
+			case 'd':
+				neighbourWord += board->data[x][y];
+				//Check the next letter is within limits, right of char
+				while(x + higher < board->size && !higherStop) {
+					higherChar = board->data[x + higher][y];
+					//While the adjacent letter is a letter and not a blank space or bonus
+					if(higherChar != '0' && higherChar != '1' && higherChar != '2' && higherChar != '3' && higherChar != '4') {
+						//Append it to the end of the string
+						neighbourWord += higherChar;
+						higher++;
+					} else {
+						//At the first number character, stop
+						higherStop = 1;
+					}
+				}
+
+				//Check the next letter is within limits, left of char
+				while(x - lower >= 0 && !lowerStop) {
+					lowerChar = board->data[x - lower][y];
+					//While the adjacent letter is a letter and not a blank space or bonus
+					if(lowerChar != '0' && lowerChar != '1' && lowerChar != '2' && lowerChar != '3' && lowerChar != '4') {
+						//Append it to the start of the string
+						neighbourWord = lowerChar + neighbourWord;
+						lower++;
+					} else {
+						//At the first number character, stop
+						lowerStop = 1;
+					}
+				}
+
+				//If the word formed isn't a word, return false
+				cout << "Checking validity of " << neighbourWord <<endl;
+				if(!isInDictionary(neighbourWord)) {
+					return false;
+				}
+
+				y++;
+				break;
+			//Otherwise check the ones that are above and below
+			case 'r':
+				neighbourWord += board->data[x][y];
+				//Check the next letter is within limit, below char
+				while(y + higher < board->size && !higherStop) {
+					higherChar = board->data[x][y + higher];
+					//While the adjacent letter is a letter and not a blank space or bonus
+					if(higherChar != '0' && higherChar != '1' && higherChar != '2' && higherChar != '3' && higherChar != '4') {
+						//Append it to the end of the string
+						neighbourWord += higherChar;
+						higher++;
+					} else {
+						//At the first number character, stop
+						higherStop = 1;
+					}
+				}
+
+				//Check the next letter is within limits, above char
+				while(y - lower >= 0 && !lowerStop) {
+					lowerChar = board->data[x][y - lower];
+					//While the adjacent letter is a letter and not a blank space or bonus
+					if(lowerChar != '0' && lowerChar != '1' && lowerChar != '2' && lowerChar != '3' && lowerChar != '4') {
+						//Append it to the start of the string
+						neighbourWord = lowerChar + neighbourWord;
+						lower++;
+					} else {
+						//At the first number character, stop
+						lowerStop = 1;
+					}
+				}
+
+				//If the word formed isn't a word, return false
+				cout << "Checking validity of " << neighbourWord <<endl;
+				if(!isInDictionary(neighbourWord)) {
+					return false;
+				}
+
+				x++;
+				break;
+			default:
+				cout << "Direction error" << endl;
+		}
 	}
+
+	//All neighbours are valid
+	return true;
 }
 
 // Checks if a word can be formed using the existing letters on the board and the player's tiles
@@ -506,7 +613,6 @@ void Scrabble::generateBoard() {
 	//3 = Double word score
 	//4 = Triple word score
 	//Any other char = Placed letter(ex.A, B, C, etc.)
-
 
 	//Set all positions of the board to be regular tiles
 	for (int i = 0; i < board->size; i++) {
@@ -719,4 +825,79 @@ int Scrabble::getTurn(){
 // Next turn
 void Scrabble::nextTurn(){
 	turn++;
+}
+
+// Check if player is still in playing
+bool Scrabble::isPlayerStillInGame(int playerId){
+	return players[playerId].stillInGame;
+}
+
+// Player is leaving game, return his position, score and who is winning
+string Scrabble::playerIsLeaving(int playerId){
+	// Set player's stillInGame to false
+	players[playerId].stillInGame = false;
+
+	char buffer[STRING_SIZE];
+
+	// Create string with format: "(player's scoreboard position) (player's score) (first place player's name)"
+	sprintf(buffer, "%d %d %s", playerPosition(playerId), players[playerId].getScore(), (char *)players[scoreBoard[0]].getName().c_str());
+	// Convert char * to string
+	string playerPositionScore(buffer);
+
+	return playerPositionScore;
+
+}
+
+// Player position depending on score
+int Scrabble::playerPosition(int playerId){
+
+	// Find given element in vector
+	vector<int>::iterator it = std::find(scoreBoard.begin(), scoreBoard.end(), playerId);
+	// Calculate index from beginning of vector
+	return distance(scoreBoard.begin(), it);
+}
+
+// Compares two players according to score
+bool comparePlayerScore(Player i1, Player i2) {
+	return (i1.getScore() > i2.getScore());
+}
+
+// Get calculate scoreBoard
+void Scrabble::updateScoreboard(){
+	scoreBoard.clear();
+	vector<Player> players_copy(players);
+
+	// Sort copy of vector using score
+	sort(players_copy.begin(), players_copy.end(), comparePlayerScore);
+
+	// Create scoreboard, the value is the id of the player at that position
+	for(int i = 0; (unsigned)i < players_copy.size(); i++){
+		scoreBoard.push_back(players_copy[i].getId());
+	}
+}
+
+// Get added words as string
+string Scrabble::getAddedWords(){
+	char words[BUFFER_SIZE] = "";
+
+	// loop through addedWords vector
+	for(int i = 0; (unsigned)i < addedWords.size(); i++){
+		proposedWord_t addedWord = addedWords[i];
+		char wordString[STRING_SIZE];
+		// Append added word to string with format: word start.y start.x direction
+		sprintf(wordString, "%s %d %d %c:", (char *)addedWord.word.c_str(), addedWord.start.y, addedWord.start.x, addedWord.direction);
+		strcat(words, wordString);
+	}
+
+	// Remove last : added
+	words[strlen(words)-1] = '\0';
+	// Convert char * to string
+	string wordString(words);
+
+	return wordString;
+}
+
+// Get letter pool size
+int Scrabble::getLetterPoolSize(){
+	return letterPool.size();
 }

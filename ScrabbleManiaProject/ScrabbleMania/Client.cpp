@@ -18,12 +18,17 @@
 using namespace std;
 
 #define BUFFER_SIZE 1024
+#define BUFFER_LONG_SIZE 2048
 
 // Function declarations
 void usage(char * program);
 void playGame(int connection_fd, bool *interrupted);
 void addWord(int connection_fd, ClientScrabble *scrabble);
 void exchangeTiles(int connection_fd, ClientScrabble *scrabble, Player *player);
+void initializeGame(int connection_fd, char *buffer, ClientScrabble *scrabble, Player *player, int *playersNumber, int *playerID);
+void playerTurn(int connection_fd, char *buffer, ClientScrabble *scrabble, Player *player);
+void gameEnded(int connection_fd, char *buffer);
+void spectating(int connection_fd, char *buffer, ClientScrabble *scrabble);
 
 int main(int argc, char * argv[]) {
 	int connection_fd;
@@ -49,16 +54,28 @@ int main(int argc, char * argv[]) {
 
 void playGame(int connection_fd, bool *interrupted) {
 	char buffer[BUFFER_SIZE];
+	// Simple scrabble board without any validations only to add words that have already been validated in server
+	ClientScrabble scrabble = ClientScrabble();
 	cout << "Connection successful, creating thread\n";
 	//Wait for thread confirmation
 	recvString(connection_fd, buffer, BUFFER_SIZE);
-	cout << "Welcome to Srabble MANIA!\n";
-	cout << "Whenever you would like to quit press CTRL+C\n";
+	cout << "Welcome to Scrabble MANIA!\n\n";
+
+	cout << "How do I play?\n";
+	cout << "1. This game follows all standard Scrabble rules except concerning the starting tile position.\n";
+	cout << "2. The numbered tiles mean the following:\n";
+	cout << "\t1 = Double letter score\n";
+	cout << "\t2 = Triple letter score\n";
+	cout << "\t3 = Double word score\n";
+	cout << "\t4 = Triple word score\n";
+	cout << "3. Whenever you would like to quit press CTRL+C.\n\n";
+
 	//Ask user for name
 	string name;
 	cout << "What is your name?\n";
 	cin >> name;
 
+	//Send name
 	sprintf(buffer, "%s", (char *)name.c_str());
 	sendString(connection_fd, buffer, strlen(buffer)+1);
 
@@ -72,6 +89,7 @@ void playGame(int connection_fd, bool *interrupted) {
 		cout << "You are the first player in the Lobby. How many players will this game consist of?" << endl;
 		cin >> playersNumber;
 
+		//Send player number
 		sprintf(buffer, "%d", playersNumber);
 		sendString(connection_fd, buffer, strlen(buffer)+1);
 	}else{
@@ -84,39 +102,7 @@ void playGame(int connection_fd, bool *interrupted) {
 
 	Player player = Player(playerID, name);
 
-	cout << "This game will consist of " << playersNumber << " players" << endl;
-
-	if(playerID < playersNumber - 1){
-		//Wait for confirmation that the other players are connected
-		cout << "Waiting for other players...\n";
-	}
-
-	// Simple scrabble board without any validations only to add words that have already been validated in server
-	ClientScrabble scrabble = ClientScrabble();
-
-	scrabble.setPlayersNumber(playersNumber);
-
-	string handString;
-	// Receives hand
-	recvString(connection_fd, buffer, BUFFER_SIZE);
-
-	// Separate by char
-	vector<letterTile_t> hand;
-
-	for(int i = 0; (unsigned)i < strlen(buffer); i++){
-		hand.push_back(letterTile_t(buffer[i], scrabble.getLetterValue(buffer[i])));
-	}
-
-	player.setHand(hand);
-
-	scrabble.generateBoard();
-
-	cout << "Game Started!" << endl;
-
-	sprintf(buffer, "OK");
-	sendString(connection_fd, buffer, strlen(buffer)+1);
-
-	scrabble.printBoard();
+	initializeGame(connection_fd, buffer, &scrabble, &player, &playersNumber, &playerID);
 
 	// Game loop
 	while(!*interrupted){
@@ -125,46 +111,161 @@ void playGame(int connection_fd, bool *interrupted) {
 
 		if(!strcmp(buffer, "YOUR_TURN")){
 
-			// Send OK
-			sprintf(buffer, "OK");
-			sendString(connection_fd, buffer, strlen(buffer)+1);
+			playerTurn(connection_fd, buffer, &scrabble, &player);
+
+		}else if(!strcmp(buffer, "GAME_ENDED")){
+
+			gameEnded(connection_fd, buffer);
+
+		}else{
+
+			spectating(connection_fd, buffer, &scrabble);
+
+		}
+
+	}
+
+	scrabble.freeBoard();
+}
+
+void initializeGame(int connection_fd, char *buffer, ClientScrabble *scrabble, Player *player, int *playersNumber, int *playerID){
+
+	cout << "This game will consist of " << *playersNumber << " players" << endl;
+
+	if(*playerID < *playersNumber - 1){
+		//Wait for confirmation that the other players are connected
+		cout << "Waiting for other players...\n";
+	}
+
+	scrabble->setPlayersNumber(*playersNumber);
+
+	scrabble->generateBoard();
+
+	if(*playerID >= *playersNumber){
+		// Spectator
+		cout << "YOU ARE ONLY A SPECTATOR!!" << endl;
+
+		// Receives words already added
+		recvString(connection_fd, buffer, BUFFER_LONG_SIZE);
+
+		char *str = strtok(buffer, ":");
+		while(str != NULL){
+			// Word
+			char *word = new char[scrabble->getBoardSize() + 1];
+			int x;
+			int y;
+			char direction;
+
+			sscanf(str, "%s %d %d %c", word, &x, &y, &direction);
+
+			string wordString(word);
+
+			proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
+			scrabble->addWordToGame(proposedWord);
+
+			str = strtok(NULL, ":");
+	}
+
+	} else {
+		string handString;
+		// Receives hand
+		recvString(connection_fd, buffer, BUFFER_SIZE);
+
+		// Separate by char
+		vector<letterTile_t> hand;
+
+		for(int i = 0; (unsigned)i < strlen(buffer); i++){
+				hand.push_back(letterTile_t(buffer[i], scrabble->getLetterValue(buffer[i])));
+		}
+
+		player->setHand(hand);
+	}
+
+	cout << "Game Started!" << endl;
+
+	sprintf(buffer, "OK");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+
+	scrabble->printBoard();
+}
+
+void playerTurn(int connection_fd, char *buffer, ClientScrabble *scrabble, Player *player){
+
+		// Send OK
+		sprintf(buffer, "OK");
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+
+		// Receive hand
+		recvString(connection_fd, buffer, BUFFER_SIZE);
+
+		// Separate by char
+		vector<letterTile_t> hand;
+
+		for(int i = 0; (unsigned)i < strlen(buffer); i++){
+			hand.push_back(letterTile_t(buffer[i], scrabble->getLetterValue(buffer[i])));
+		}
+
+		player->setHand(hand);
+
+		// Turn of current client
+		cout << "It's your turn! Your hand is: " << endl;
+		player->printHand();
+
+		int ans = 0;
+		while(ans != 1 && ans != 2){
+		cout << "What would you like to do?" << endl;
+		cout << "\t1. Add a word to board" << endl;
+		cout << "\t2. Change tiles" << endl;
+		cin >> ans;
 
 			// Receive hand
 			recvString(connection_fd, buffer, BUFFER_SIZE);
 
-			// Separate by char
-			vector<letterTile_t> hand;
+			switch(ans) {
+			case 1:
+				addWord(connection_fd, scrabble);
+			break;
+			case 2:
+				exchangeTiles(connection_fd, scrabble, player);
+			break;
+			default:
+				cout << "Invalid option please enter a valid one!" << endl;
+			break;
+		}
+	}
 
-			for(int i = 0; (unsigned)i < strlen(buffer); i++){
-				hand.push_back(letterTile_t(buffer[i], scrabble.getLetterValue(buffer[i])));
-			}
+	// Send OK
+	sprintf(buffer, "OK");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+	}
 
-			player.setHand(hand);
 
-			// Turn of current client
-			cout << "It's your turn! Your hand is: " << endl;
-			player.printHand();
+// Game ended when someone won
+void gameEnded(int connection_fd, char *buffer){
+	// Game ended
+	sprintf(buffer, "OK");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
 
-			int ans = 0;
-			while(ans != 1 && ans != 2){
-				cout << "What would you like to do?" << endl;
-				cout << "\t1. Add a word to board" << endl;
-				cout << "\t2. Change tiles" << endl;
+	// Receives positon and score
+	int position = 0;
+	int score = 0;
+	char winningPlayer[BUFFER_SIZE];
 
-				cin >> ans;
+	recvString(connection_fd, buffer, BUFFER_SIZE);
+	sscanf(buffer, "%d %d %s", &position, &score, winningPlayer);
 
-				switch(ans) {
-					case 1:
-						addWord(connection_fd, &scrabble);
-					break;
-					case 2:
-						exchangeTiles(connection_fd, &scrabble, &player);
-					break;
-					default:
-						cout << "Invalid option please enter a valid one!" << endl;
-					break;
-				}
-			}
+	cout << "The game has ended!" << endl;
+
+	if(position == 0){
+		cout << "Congratulations!!!" << endl;
+		cout << "You were the first place with a score of " << score << " points!" << endl;
+	}else{
+		cout << winningPlayer << " won!" << endl;
+		cout << "You ended at position " << position+1 << " with a score of " << score << " points!" << endl;
+	}
+
+	cout << "Thank you for playing with us!" << endl;
+}
 
 			// Send OK
 			sprintf(buffer, "OK");
