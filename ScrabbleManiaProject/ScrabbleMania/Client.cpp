@@ -267,56 +267,49 @@ void gameEnded(int connection_fd, char *buffer){
 	cout << "Thank you for playing with us!" << endl;
 }
 
-			// Send OK
-			sprintf(buffer, "OK");
-			sendString(connection_fd, buffer, strlen(buffer)+1);
+// Spectating someone else's turn
+void spectating(int connection_fd, char *buffer, ClientScrabble *scrabble) {
+	// Received player's turn name
+	string playersNameTurn(buffer);
 
-		}else{
-			string playersNameTurn(buffer);
+	sprintf(buffer, "OK");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
 
-			sprintf(buffer, "OK");
-			sendString(connection_fd, buffer, strlen(buffer)+1);
+	cout << playersNameTurn << "'s turn" << endl;
+	cout << "Waiting for their move" << endl;
 
-			cout << playersNameTurn << "'s turn" << endl;
-			cout << "Waiting for their move" << endl;
+	recvString(connection_fd, buffer, BUFFER_SIZE);
 
-			recvString(connection_fd, buffer, BUFFER_SIZE);
+	// Check what was the move
+	if(!strcmp(buffer, "CHANGED")){
+		cout << playersNameTurn << " exchanged tiles." << endl;
+		// Player only chnaged tiles
+		sprintf(buffer, "OK");
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+	}else{
+		// Player added word
+		char *word = new char[scrabble->getBoardSize() + 1];
+		int x;
+		int y;
+		char direction;
 
-			// Check what was the move
-			if(!strcmp(buffer, "CHANGED")){
-				cout << playersNameTurn << " exchanged tiles." << endl;
-				// Player only chnaged tiles
-				sprintf(buffer, "OK");
-				sendString(connection_fd, buffer, strlen(buffer)+1);
-			}else{
-				// Player added word
-				char *word = new char[scrabble.getBoardSize() + 1];
-				int x;
-				int y;
-				char direction;
+		sscanf(buffer, "%s %d %d %c", word, &x, &y, &direction);
 
-				sscanf(buffer, "%s %d %d %c", word, &x, &y, &direction);
+		string wordString(word);
 
-				string wordString(word);
+		cout << playersNameTurn << " added:" << endl;
+		cout << "\tWord: " << wordString << endl;
+		cout << "\tCoordinates: " << y+1 << ", " << x+1 << endl;
+		cout << "\tDirection: " << direction << endl;
 
-				cout << playersNameTurn << " added:" << endl;
-				cout << "\tWord: " << wordString << endl;
-				cout << "\tCoordinates: " << y+1 << ", " << x+1 << endl;
-				cout << "\tDirection: " << direction << endl;
+		proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
+		scrabble->addWordToGame(proposedWord);
 
-				proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
-				scrabble.addWordToGame(proposedWord);
+		scrabble->printBoard();
 
-				scrabble.printBoard();
-
-				sprintf(buffer, "OK");
-				sendString(connection_fd, buffer, strlen(buffer)+1);
-			}
-		}
-
+		sprintf(buffer, "OK");
+		sendString(connection_fd, buffer, strlen(buffer)+1);
 	}
-
-	scrabble.freeBoard();
 }
 
 void addWord(int connection_fd, ClientScrabble *scrabble) {

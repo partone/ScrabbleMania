@@ -52,6 +52,8 @@ void spectating(char *buffer, clientThreadData_t *ctd, int *turn);
 
 void usage(char * program);
 
+bool interrupt = false;
+
 int main(int argc, char * argv[]) {
 	// Check the correct arguments
 	if (argc != 2)
@@ -132,6 +134,15 @@ void waitForConnections(int server_fd, Scrabble *scrabble)
 
 //The function each thread will attend clients on
 void * clientHandler(void * arg) {
+	//Signal things
+	struct sigaction new_action;
+	struct sigaction old_action;
+
+	//Signal handling for interruptions
+	new_action.sa_handler = onInterrupt;
+	new_action.sa_flags = SA_RESTART;
+	sigaction(SIGINT, &new_action, &old_action);
+
 	// Set up variables for this thread
 	cout << "Thread created\n";
 	char buffer[BUFFER_SIZE];
@@ -213,6 +224,11 @@ void * clientHandler(void * arg) {
 	free(ctd);
 
 	pthread_exit(NULL);
+}
+
+void onInterrupt () {
+	cout << "Server interrupted, ending game" << endl;
+	interrupt = true;
 }
 
 void initializeClient(int connection_fd, char* buffer, char* bufferLong, Scrabble *scrabble, int *playerID, int *playerNumber){
