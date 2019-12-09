@@ -41,17 +41,20 @@ int Scrabble::addPlayerToGame(string name){
 string Scrabble::getAddedWords(){
 	char words[BUFFER_SIZE] = "";
 
+	// loop through addedWords vector
 	for(int i = 0; i < addedWords.size(); i++){
 		proposedWord_t addedWord = addedWords[i];
 		char wordString[STRING_SIZE];
-
+		// Append added word to string with format: word start.y start.x direction
 		sprintf(wordString, "%s %d %d %c:", (char *)addedWord.word.c_str(), addedWord.start.y, addedWord.start.x, addedWord.direction);
-		
 		strcat(words, wordString);
 	}
 
+	// Remove last : added
 	words[strlen(words)-1] = '\0';
+	// Convert char * to string
 	string wordString(words);
+
 	return wordString;
 }
 
@@ -108,12 +111,14 @@ bool Scrabble::isPlayerStillInGame(int playerId){
 
 // Player is leaving game, return his position, score and who is winning
 string Scrabble::playerIsLeaving(int playerId){
+	// Set player's stillInGame to false
 	players[playerId].stillInGame = false;
 
 	char buffer[STRING_SIZE];
 
+	// Create string with format: "(player's scoreboard position) (player's score) (first place player's name)"
 	sprintf(buffer, "%d %d %s", playerPosition(playerId), players[playerId].getScore(), (char *)players[scoreBoard[0]].getName().c_str());
-
+	// Convert char * to string
 	string playerPositionScore(buffer);
 
 	return playerPositionScore;
@@ -125,13 +130,13 @@ int Scrabble::playerPosition(int playerId){
  
 	// Find given element in vector
 	vector<int>::iterator it = std::find(scoreBoard.begin(), scoreBoard.end(), playerId);
- 
+	// Calculate index from beginning of vector
 	return distance(scoreBoard.begin(), it);
 }
 
 // Compares two players according to score
 bool comparePlayerScore(Player i1, Player i2) { 
-    return (i1.getScore() > i2.getScore()); 
+	return (i1.getScore() > i2.getScore()); 
 }
 
 // Get calculate scoreBoard
@@ -139,8 +144,10 @@ void Scrabble::updateScoreboard(){
 	scoreBoard.clear();
 	vector<Player> players_copy(players);
 	
+	// Sort copy of vector using score
 	sort(players_copy.begin(), players_copy.end(), comparePlayerScore);
 
+	// Create scoreboard, the value is the id of the player at that position
 	for(int i = 0; i < players_copy.size(); i++){
 		scoreBoard.push_back(players_copy[i].getId());
 	}
@@ -151,6 +158,7 @@ void Scrabble::updateScoreboard(){
 int Scrabble::countActivePlayers(){
 	int count = 0;
 	for(int i = 0; (unsigned)i < players.size(); i++){
+		// Increment count if player is still in game
 		if(players[i].stillInGame){
 			count++;
 		}
@@ -169,6 +177,7 @@ string Scrabble::getHand(int playerId){
 
 	vector<letterTile_t> *hand = players[playerId].getHand();
 	for (int i = 0; (unsigned)i < hand->size(); i++) {
+		// Append letter of tile to string
 		handString += hand->at(i).letter;
 	}
 
@@ -188,8 +197,8 @@ void Scrabble::fillDictionary(){
 	if (file.is_open()) {
 	while ( getline (file,line) ) {
 		// Save it in a the dictionary data structure
-			trim(line);
-			dictionary.insert(line);
+		trim(line);
+		dictionary.insert(line);
 	}
 	file.close();
 	}

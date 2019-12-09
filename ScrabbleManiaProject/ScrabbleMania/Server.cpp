@@ -56,7 +56,7 @@ int main(int argc, char * argv[]) {
 	srand(time(0));			//Initialise seed for random stuff
 	Scrabble scrabble = Scrabble();
 
-	// TODO: ask this to the first player
+	// Set the dictionary
 	scrabble.setDictionary("dictionaries/english.txt");
 
 	//Set up the sever
@@ -87,7 +87,7 @@ void waitForConnections(int server_fd, Scrabble *scrabble)
 	proposedWord_t addedWord;
 	pthread_cond_t playerTurnOverCond = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-	
+	// Set up variables for sockets communication
 	struct sockaddr_in client_address;
 	socklen_t client_address_size;
 	char client_presentation[INET_ADDRSTRLEN];
@@ -126,6 +126,7 @@ void waitForConnections(int server_fd, Scrabble *scrabble)
 
 //The function each thread will attend clients on
 void * clientHandler(void * arg) {
+	// Set up variables for this thread
 	cout << "Thread created\n";
 	char buffer[BUFFER_SIZE];
 	char bufferLong[BUFFER_LONG_SIZE];
@@ -166,7 +167,7 @@ void * clientHandler(void * arg) {
 		// It is the first client to connect
 		sprintf(buffer, "SEND_PLAYER_NUMBER");
 		sendString(connection_fd, buffer, strlen(buffer)+1);
-
+		// Receive player number
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 		sscanf(buffer, "%d", &playerNumber);
 		scrabble->setSettingsPlayerNumber(playerNumber);
@@ -178,12 +179,13 @@ void * clientHandler(void * arg) {
 		while (scrabble->getSettingsPlayerNumber() == 0){ }
 
 		playerNumber = scrabble->getSettingsPlayerNumber();
-
+		// Send player Number and playerID
 		sprintf(buffer, "%d %d", playerNumber, playerID);
 		sendString(connection_fd, buffer, strlen(buffer)+1);
 		// Receives OK
 		recvString(connection_fd, buffer, BUFFER_SIZE);
 
+		// Check if is the last necessary palyer to start game
 		if (playerID == playerNumber - 1) {
 			scrabble->startGame();
 			cout << "Game started" << endl;
