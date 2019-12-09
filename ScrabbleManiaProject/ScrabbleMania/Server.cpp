@@ -24,13 +24,8 @@ Eric Parton
 #define BUFFER_SIZE 1024
 #define BUFFER_LONG_SIZE 2048
 
-// Function declarations
-void waitForConnections(int server_fd, Scrabble *scrabble);
-void * clientHandler(void * arg);
-void usage(char * program);
-
 //The struct to be sent to the thread
-typedef struct clientThreadDataStruct {
+typedef struct clientThreadData_tStruct {
 	Scrabble * scrabble;
 	// Word that was just successfully added
 	bool * playerMadeMove;
@@ -44,7 +39,18 @@ typedef struct clientThreadDataStruct {
 	pthread_mutex_t * lock;
 
 	int connection_fd;
-} clientThreadData;
+} clientThreadData_t;
+
+// Function declarations
+void waitForConnections(int server_fd, Scrabble *scrabble);
+void * clientHandler(void * arg);
+void initializeClient(int connection_fd, char* buffer, char* bufferLong, Scrabble *scrabble, int *playerID, int *playerNumber);
+void playerTurn(char *buffer, clientThreadData_t *ctd, int *playerID);
+void exchangeTiles(int connection_fd, char *buffer, Scrabble *scrabble, int *playerID);
+void addWord(int connection_fd, char *buffer, Scrabble *scrabble, proposedWord_t *addedWord, int *playerID);
+void spectating(char *buffer, clientThreadData_t *ctd, int *turn);
+
+void usage(char * program);
 
 int main(int argc, char * argv[]) {
 	// Check the correct arguments
@@ -93,7 +99,7 @@ void waitForConnections(int server_fd, Scrabble *scrabble)
 	char client_presentation[INET_ADDRSTRLEN];
 	int client_fd;
 	pthread_t new_tid;
-	clientThreadData * ctd = NULL;		//For the data sent to the thread
+	clientThreadData_t * ctd = NULL;		//For the data sent to the thread
 
 	//Allow each player to connect to the game
 	while(1){
@@ -108,7 +114,7 @@ void waitForConnections(int server_fd, Scrabble *scrabble)
 			break;
 		}
 		//Prepare the client struct
-		ctd = (clientThreadData *)malloc(sizeof(clientThreadData));
+		ctd = (clientThreadData_t *)malloc(sizeof(clientThreadData_t));
 		ctd->scrabble = scrabble;
 		ctd->playerMadeMove = &playerMadeMove;
 		ctd->gameHasNewWord = &gameHasNewWord;
@@ -137,10 +143,11 @@ void * clientHandler(void * arg) {
 	pthread_cond_t * playerTurnOverCond;
 	pthread_mutex_t * lock;
 	int connection_fd;
-	int playerID;
+	int playerID = 0;
+	int playerNumber = 0;
 
 	//Get the game info
-	clientThreadData * ctd = (clientThreadData *) arg;
+	clientThreadData_t * ctd = (clientThreadData_t *) arg;
 	scrabble = ctd->scrabble;
 	playerMadeMove = ctd->playerMadeMove;
 	gameHasNewWord = ctd->gameHasNewWord;
@@ -149,68 +156,10 @@ void * clientHandler(void * arg) {
 	lock = ctd->lock;
 	connection_fd = ctd->connection_fd;
 
-	//Let the client know they have their own thread
-	cout<<"Telling client about thread creation" << endl;
-	sprintf(buffer, "OK");
-	sendString(connection_fd, buffer, strlen(buffer)+1);
+	initializeClient(connection_fd, buffer, bufferLong, scrabble, &playerID, &playerNumber);
 
-	//Get the player's name
-	recvString(connection_fd, buffer, BUFFER_SIZE);
-	cout << "Received client's name: " << buffer << endl;
-
-	//Get the player ID for turn management later on
-	playerID = scrabble->addPlayerToGame(buffer);
-	int playerNumber = 0;
-
-	// Ask client for number of players, if it is the first to connect
-	if(playerID == 0){
-		// It is the first client to connect
-		sprintf(buffer, "SEND_PLAYER_NUMBER");
-		sendString(connection_fd, buffer, strlen(buffer)+1);
-		// Receive player number
-		recvString(connection_fd, buffer, BUFFER_SIZE);
-		sscanf(buffer, "%d", &playerNumber);
-		scrabble->setSettingsPlayerNumber(playerNumber);
-
-		cout << "Received players number " << playerNumber << endl;
-
-	}else{
-		// Wait for the first player to set gameSettings.playerNumber
-		while (scrabble->getSettingsPlayerNumber() == 0){ }
-
-		playerNumber = scrabble->getSettingsPlayerNumber();
-		// Send player Number and playerID
-		sprintf(buffer, "%d %d", playerNumber, playerID);
-		sendString(connection_fd, buffer, strlen(buffer)+1);
-		// Receives OK
-		recvString(connection_fd, buffer, BUFFER_SIZE);
-
-		// Check if is the last necessary palyer to start game
-		if (playerID == playerNumber - 1) {
-			scrabble->startGame();
-			cout << "Game started" << endl;
-		}
-
-	}
-
+	// Variable for checking what player's turn is it
 	int turn = 0;
-
-	// Wait until the game starts
-	while(!scrabble->hasActiveGame){
-	}
-
-	// Check if it's spectator
-	if (playerID >= playerNumber){
-		// Spectator
-		// Send words already in board
-		sprintf(bufferLong, "%s", (char *)scrabble->getAddedWords().c_str());
-		sendString(connection_fd, bufferLong, strlen(bufferLong)+1);
-	}else{
-		// Active player
-		// Send hand
-		sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
-		sendString(connection_fd, buffer, strlen(buffer)+1);
-	}
 
 	// Receives OK
 	recvString(connection_fd, buffer, BUFFER_SIZE);
@@ -236,148 +185,11 @@ void * clientHandler(void * arg) {
 		if(turn == playerID) {
 			*playerMadeMove = false;
 			cout << "Turn of " << turn << endl;
-			// turn of this thread player
-			sprintf(buffer, "YOUR_TURN");
-			sendString(connection_fd, buffer, strlen(buffer)+1);
-
-			//Receive OK
-			recvString(connection_fd, buffer, BUFFER_SIZE);
-
-			//Send hand
-			sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
-			sendString(connection_fd, buffer, strlen(buffer)+1);
-
-			//Receive OK
-			recvString(connection_fd, buffer, BUFFER_SIZE);
-
-			// Check what player wants to do
-			if(!strcmp(buffer, "CHANGE")){
-				// Wants to change tiles
-				sprintf(buffer, "OK");
-				sendString(connection_fd, buffer, strlen(buffer)+1);
-				// Receives the tiles indexes separated by commas
-
-				recvString(connection_fd, buffer, BUFFER_SIZE);
-				printf("Player wants to exchange: %s\n", buffer);
-				char indexes[BUFFER_SIZE];
-
-				strcpy(indexes, buffer);
-
-				// Split indexes string by commas to get each index
-				char *string = strtok(indexes, ",");
-				vector<int> tilesIndexes;
-				while(string != NULL){
-					tilesIndexes.push_back(atoi(string));
-					string = strtok(NULL, ",");
-				}
-				// Change tiles
-				scrabble->exchangeLetters(playerID, tilesIndexes);
-
-				// Send hand
-				sprintf(buffer, "%s", (char *)scrabble->getHand(playerID).c_str());
-				sendString(connection_fd, buffer, strlen(buffer)+1);
-
-				*gameHasNewWord = false;
-			}else{
-				char *word = new char[scrabble->getBoardSize() + 1];
-				int x;
-				int y;
-				char direction;
-
-				// Wants to add word
-				sscanf(buffer, "%s %d %d %c", word, &x, &y, &direction);
-				cout << "Player wants to add word: " << word << " at " << x << ", " << y << " in " << direction << " direction." << endl;
-
-				string wordString(word);
-				proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
-				//Add word to game and replace the players' tiles if the word is valid
-				int wordValue = scrabble->addWordToGame(proposedWord, playerID);
-				while(wordValue < 0){
-					cout << "Invalid!" << endl;
-					// Invalid word
-					// Send in protocol that it was not valid, try again
-					sprintf(buffer, "INVALID");
-					sendString(connection_fd, buffer, strlen(buffer)+1);
-
-					recvString(connection_fd, buffer, BUFFER_SIZE);
-					sscanf(buffer, "%s %d %d %c", word, &x, &y, &direction);
-					cout << "Player wants to add word: " << word << " at " << x << ", " << y << " in " << direction << " direction." << endl;
-
-					string wordString(word);
-					proposedWord = proposedWord_t(wordString, x, y, direction);
-
-					//Add word to game and replace the players' tiles if the word is valid
-					wordValue = scrabble->addWordToGame(proposedWord, playerID);
-				}
-
-				cout << "Valid!" << endl;
-
-				scrabble->printBoard();
-
-				// Word added successfully send the value of the word added
-				sprintf(buffer, "%d", wordValue);
-				sendString(connection_fd, buffer, strlen(buffer)+1);
-
-				*addedWord = proposedWord;
-				*gameHasNewWord = true;
-<<<<<<< HEAD
-				*playerMadeMove = true;
-				//Start the mutex here so it affects all players
-				pthread_mutex_lock(&lock);
-				pthread_cond_broadcast(&playerTurnOverCond); 	//Signal the other threads to continue
-				cout << "Sending turn over signal" << endl;
-				//Unlock the mutex
-				pthread_mutex_unlock(&lock);
-=======
-
-				// Check if game has ended
-				if(scrabble->getHand(playerID) == ""){
-					// Means that the player has used all its tiles and the letterpool is empty
-					scrabble->endGame();
-				}
->>>>>>> c320994e05df4cb4c183630e889cf7f465f0236d
-			}
-
-			//Start the mutex here so it affects all players
-			pthread_mutex_lock(lock);
-			pthread_cond_signal(playerTurnOverCond); 	//Signal the other threads to continue
-			cout << "Sending turn over signal" << endl;
-			//Unlock the mutex
-			pthread_mutex_unlock(lock);
-			
-			*playerMadeMove = true;
-			// Next turn in game
-			scrabble->nextTurn();
+			playerTurn(buffer, ctd, &playerID);
 
 		}else{
-			// turn of other player
-			sprintf(buffer, "%s", (char *)scrabble->getPlayerName(turn).c_str());
-			sendString(connection_fd, buffer, strlen(buffer)+1);
-
-			// Receives OK
-			recvString(connection_fd, buffer, BUFFER_SIZE);
-
-			// Wait until the turn player adds word to board
-			cout << "Waiting for turn over signal" << endl;
-<<<<<<< HEAD
-			pthread_mutex_lock(&lock);
-			pthread_cond_wait(&playerTurnOverCond, &lock);
-			pthread_mutex_unlock(&lock);
-=======
-			pthread_cond_wait(playerTurnOverCond, lock);
->>>>>>> c320994e05df4cb4c183630e889cf7f465f0236d
-			cout << "Received turn over signal" << endl;
-
-			// Check what player did
-			if(*gameHasNewWord) {
-				// Send new word to client
-				sprintf(buffer, "%s %d %d %c", (char *)addedWord->word.c_str(), addedWord->start.y, addedWord->start.x, addedWord->direction);
-				sendString(connection_fd, buffer, strlen(buffer)+1);
-			}else{
-				// Player only changed tiles
-				sprintf(buffer, "CHANGED");
-				sendString(connection_fd, buffer, strlen(buffer)+1);
-			}
+			
+			spectating(buffer, ctd, &turn);
 
 		}
 
@@ -401,6 +213,233 @@ void * clientHandler(void * arg) {
 	free(ctd);
 
 	pthread_exit(NULL);
+}
+
+void initializeClient(int connection_fd, char* buffer, char* bufferLong, Scrabble *scrabble, int *playerID, int *playerNumber){
+	//Let the client know they have their own thread
+	cout<<"Telling client about thread creation" << endl;
+	sprintf(buffer, "OK");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+
+	//Get the player's name
+	recvString(connection_fd, buffer, BUFFER_SIZE);
+	cout << "Received client's name: " << buffer << endl;
+
+	//Get the player ID for turn management later on
+	*playerID = scrabble->addPlayerToGame(buffer);
+	*playerNumber = 0;
+
+	// Ask client for number of players, if it is the first to connect
+	if(*playerID == 0){
+		// It is the first client to connect
+		sprintf(buffer, "SEND_PLAYER_NUMBER");
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+		// Receive player number
+		recvString(connection_fd, buffer, BUFFER_SIZE);
+		sscanf(buffer, "%d", playerNumber);
+		scrabble->setSettingsPlayerNumber(*playerNumber);
+
+		cout << "Received players number " << *playerNumber << endl;
+
+	}else{
+		// Wait for the first player to set gameSettings.playerNumber
+		while (scrabble->getSettingsPlayerNumber() == 0){ }
+
+		*playerNumber = scrabble->getSettingsPlayerNumber();
+		// Send player Number and playerID
+		sprintf(buffer, "%d %d", *playerNumber, *playerID);
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+		// Receives OK
+		recvString(connection_fd, buffer, BUFFER_SIZE);
+
+		// Check if is the last necessary palyer to start game
+		if (*playerID == *playerNumber - 1) {
+			scrabble->startGame();
+			cout << "Game started" << endl;
+		}
+
+	}
+
+	// Wait until the game starts
+	while(!scrabble->hasActiveGame){
+	}
+
+	// Check if it's spectator
+	if (*playerID >= *playerNumber){
+		// Spectator
+		// Send words already in board
+		sprintf(bufferLong, "%s", (char *)scrabble->getAddedWords().c_str());
+		sendString(connection_fd, bufferLong, strlen(bufferLong)+1);
+	}else{
+		// Active player
+		// Send hand
+		sprintf(buffer, "%s", (char *)scrabble->getHand(*playerID).c_str());
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+	}
+}
+
+// Turn of player in thread
+void playerTurn(char *buffer, clientThreadData_t *ctd, int *playerID){
+	Scrabble * scrabble = ctd->scrabble;
+	bool * gameHasNewWord = ctd->playerMadeMove;
+	bool * playerMadeMove = ctd->gameHasNewWord;
+	proposedWord_t * addedWord = ctd->addedWord;
+	pthread_cond_t * playerTurnOverCond = ctd->playerTurnOverCond;
+	pthread_mutex_t * lock = ctd->lock;
+	int connection_fd = ctd->connection_fd;
+
+	// turn of this thread player
+	sprintf(buffer, "YOUR_TURN");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+
+	//Receive OK
+	recvString(connection_fd, buffer, BUFFER_SIZE);
+
+	//Send hand
+	sprintf(buffer, "%s", (char *)scrabble->getHand(*playerID).c_str());
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+
+	//Receive OK
+	recvString(connection_fd, buffer, BUFFER_SIZE);
+
+	// Check what player wants to do
+	if(!strcmp(buffer, "CHANGE")){
+		
+		exchangeTiles(connection_fd, buffer, scrabble, playerID);
+
+		*gameHasNewWord = false;
+	}else{
+		
+		addWord(connection_fd, buffer, scrabble, addedWord, playerID);
+
+		*gameHasNewWord = true;
+
+		// Check if game has ended
+		if(scrabble->getHand(*playerID) == ""){
+			// Means that the player has used all its tiles and the letterpool is empty
+			scrabble->endGame();
+		}
+	}
+
+	//Start the mutex here so it affects all players
+	pthread_mutex_lock(lock);
+	pthread_cond_broadcast(playerTurnOverCond); 	//Signal the other threads to continue
+	cout << "Sending turn over signal" << endl;
+	//Unlock the mutex
+	pthread_mutex_unlock(lock);
+	
+	*playerMadeMove = true;
+	// Next turn in game
+	scrabble->nextTurn();
+}
+
+// Exchange tiles
+void exchangeTiles(int connection_fd, char *buffer, Scrabble *scrabble, int *playerID){
+	// Wants to change tiles
+	sprintf(buffer, "OK");
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+	// Receives the tiles indexes separated by commas
+
+	recvString(connection_fd, buffer, BUFFER_SIZE);
+	printf("Player wants to exchange: %s\n", buffer);
+	char indexes[BUFFER_SIZE];
+
+	strcpy(indexes, buffer);
+
+	// Split indexes string by commas to get each index
+	char *string = strtok(indexes, ",");
+	vector<int> tilesIndexes;
+	while(string != NULL){
+		tilesIndexes.push_back(atoi(string));
+		string = strtok(NULL, ",");
+	}
+	// Change tiles
+	scrabble->exchangeLetters(*playerID, tilesIndexes);
+
+	// Send hand
+	sprintf(buffer, "%s", (char *)scrabble->getHand(*playerID).c_str());
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+}
+
+// Add word to game
+void addWord(int connection_fd, char *buffer, Scrabble *scrabble, proposedWord_t *addedWord, int *playerID){
+	char *word = new char[scrabble->getBoardSize() + 1];
+	int x;
+	int y;
+	char direction;
+
+	// Wants to add word
+	sscanf(buffer, "%s %d %d %c", word, &x, &y, &direction);
+	cout << "Player wants to add word: " << word << " at " << x << ", " << y << " in " << direction << " direction." << endl;
+
+	string wordString(word);
+	proposedWord_t proposedWord = proposedWord_t(wordString, x, y, direction);
+	//Add word to game and replace the players' tiles if the word is valid
+	int wordValue = scrabble->addWordToGame(proposedWord, *playerID);
+	while(wordValue < 0){
+		cout << "Invalid!" << endl;
+		// Invalid word
+		// Send in protocol that it was not valid, try again
+		sprintf(buffer, "INVALID");
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+
+		recvString(connection_fd, buffer, BUFFER_SIZE);
+		sscanf(buffer, "%s %d %d %c", word, &x, &y, &direction);
+		cout << "Player wants to add word: " << word << " at " << x << ", " << y << " in " << direction << " direction." << endl;
+
+		string wordString(word);
+		proposedWord = proposedWord_t(wordString, x, y, direction);
+
+		//Add word to game and replace the players' tiles if the word is valid
+		wordValue = scrabble->addWordToGame(proposedWord, *playerID);
+	}
+
+	cout << "Valid!" << endl;
+
+	scrabble->printBoard();
+
+	// Word added successfully send the value of the word added
+	sprintf(buffer, "%d", wordValue);
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+
+	*addedWord = proposedWord;
+}
+
+// Spectate someone else's turn
+void spectating(char *buffer, clientThreadData_t *ctd, int *turn){
+	Scrabble * scrabble = ctd->scrabble;
+	bool * gameHasNewWord = ctd->playerMadeMove;
+	proposedWord_t * addedWord = ctd->addedWord;
+	pthread_cond_t * playerTurnOverCond = ctd->playerTurnOverCond;
+	pthread_mutex_t * lock = ctd->lock;
+	int connection_fd = ctd->connection_fd;
+
+	// turn of other player
+	sprintf(buffer, "%s", (char *)scrabble->getPlayerName(*turn).c_str());
+	sendString(connection_fd, buffer, strlen(buffer)+1);
+
+	// Receives OK
+	recvString(connection_fd, buffer, BUFFER_SIZE);
+
+	// Wait until the turn player adds word to board
+	//while(!*playerMadeMove){
+	//}
+	cout << "Waiting for turn over signal" << endl;
+	pthread_mutex_lock(lock);
+	pthread_cond_wait(playerTurnOverCond, lock);
+	pthread_mutex_unlock(lock);
+	cout << "Received turn over signal" << endl;
+
+	// Check what player did
+	if(*gameHasNewWord) {
+		// Send new word to client
+		sprintf(buffer, "%s %d %d %c", (char *)addedWord->word.c_str(), addedWord->start.y, addedWord->start.x, addedWord->direction);
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+	}else{
+		// Player only changed tiles
+		sprintf(buffer, "CHANGED");
+		sendString(connection_fd, buffer, strlen(buffer)+1);
+	}
 }
 
 // TODO: read ctrl+c signal in server and let the clients know, return their score and position
